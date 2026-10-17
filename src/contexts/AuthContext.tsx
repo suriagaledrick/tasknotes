@@ -71,7 +71,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error.code === "auth/popup-closed-by-user") {
         message = "Sign-in popup was closed before completing.";
       } else if (error.code === "auth/unauthorized-domain") {
-        message = "This domain (localhost) is not authorized in your Firebase Auth settings. Please add localhost in Firebase Console -> Authentication -> Settings -> Authorized domains.";
+        const currentDomain = typeof window !== "undefined" ? window.location.hostname : "your domain";
+        message = `This domain (${currentDomain}) is not authorized in your Firebase Auth settings. Please add '${currentDomain}' in Firebase Console -> Authentication -> Settings -> Authorized domains.`;
       } else if (error.code === "auth/operation-not-allowed") {
         message = "Google Sign-In is not enabled in Firebase Console. Please enable Google provider in Authentication -> Sign-in method.";
       }
