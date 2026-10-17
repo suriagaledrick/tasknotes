@@ -151,7 +151,6 @@ export default function WorkspaceNotesPane({
           >
             {notes.map((note, index) => {
               const colorConfig = NOTE_COLORS.find((c) => c.id === note.color) || NOTE_COLORS[0];
-              const isDefault = note.color === "default";
               return (
                 <Draggable key={note.id} draggableId={`note-${note.id}`} index={index}>
                   {(dragProvided, dragSnapshot) => (
@@ -160,11 +159,7 @@ export default function WorkspaceNotesPane({
                       {...dragProvided.draggableProps}
                       {...dragProvided.dragHandleProps}
                       onClick={() => onSelectNote(note)}
-                      className={`group relative rounded-xl border p-3 select-none cursor-grab active:cursor-grabbing ${
-                        isDefault
-                          ? "bg-white dark:bg-gray-800/90 border-gray-200 dark:border-gray-700"
-                          : `${colorConfig.bgClass} ${colorConfig.darkBgClass ? `dark:${colorConfig.darkBgClass}` : ""} ${colorConfig.borderClass} dark:border-gray-700`
-                      } ${
+                      className={`group relative rounded-xl border p-3 select-none cursor-grab active:cursor-grabbing ${colorConfig.bgClass} ${colorConfig.darkBgClass} ${colorConfig.borderClass} ${colorConfig.darkBorderClass || "dark:border-gray-700"} ${
                         dragSnapshot.isDragging
                           ? "shadow-2xl ring-2 ring-blue-500 z-50 opacity-95"
                           : "shadow-xs hover:shadow-md transition-shadow transition-colors duration-150"

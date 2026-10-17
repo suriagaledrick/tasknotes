@@ -73,7 +73,7 @@ export default function RichTextEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-blue-600 underline cursor-pointer",
+          class: "text-blue-600 dark:text-blue-400 underline cursor-pointer",
         },
       }),
       Table.configure({
@@ -199,7 +199,7 @@ export default function RichTextEditor({
   const colorConfig = NOTE_COLORS.find((c) => c.id === selectedColor) || NOTE_COLORS[0];
 
   return (
-    <div className={`rounded-xl border shadow-sm transition-all overflow-hidden ${colorConfig.bgClass} dark:${colorConfig.darkBgClass} ${colorConfig.borderClass} dark:border-neutral-700`}>
+    <div className={`rounded-xl border shadow-sm transition-all overflow-hidden ${colorConfig.bgClass} ${colorConfig.darkBgClass} ${colorConfig.borderClass} ${colorConfig.darkBorderClass || "dark:border-neutral-700"}`}>
       {/* Top Toolbar matching user's design reference */}
       <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-900 text-neutral-200 border-b border-neutral-800 text-sm">
         {/* 1. Hierarchy / Headings Dropdown (Image 1: Title, Subtitle, Heading, Subheading, Section, Subsection, Body) */}

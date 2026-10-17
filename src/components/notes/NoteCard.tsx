@@ -25,7 +25,7 @@ export default function NoteCard({
   return (
     <div
       onClick={() => onSelect(note)}
-      className={`group relative rounded-xl border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between ${colorConfig.bgClass} dark:${colorConfig.darkBgClass} ${colorConfig.borderClass} dark:border-gray-700/80`}
+      className={`group relative rounded-xl border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between ${colorConfig.bgClass} ${colorConfig.darkBgClass} ${colorConfig.borderClass} ${colorConfig.darkBorderClass || "dark:border-gray-700/80"}`}
     >
       <div>
         {/* Card Header: Title & Pin button */}
