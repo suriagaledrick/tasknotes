@@ -1,0 +1,249 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.dark {
+  --background: #0b0f19;
+  --foreground: #f8fafc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+input, textarea, select {
+  color: #111827;
+}
+
+.dark input, .dark textarea, .dark select {
+  color: #f8fafc !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af;
+}
+
+.dark input::placeholder, .dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* TipTap Editor Styles */
+.tiptap {
+  outline: none;
+  min-height: 250px;
+}
+
+.tiptap h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap h3 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap p {
+  margin-bottom: 0.75rem;
+  line-height: 1.65;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap ul:not([data-type="taskList"]) {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  margin-right: 0.5rem;
+  user-select: none;
+  cursor: pointer;
+  margin-top: 0.2rem;
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+/* TipTap Tables */
+.tiptap table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.tiptap table td,
+.tiptap table th {
+  min-width: 1em;
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: #f3f4f6;
+}
+
+.tiptap table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+/* Multi-column layout */
+.doc-columns-1 {
+  column-count: 1;
+}
+
+.doc-columns-2 {
+  column-count: 2;
+  column-gap: 2.5rem;
+  column-rule: 1px solid #e5e7eb;
+}
+
+.doc-columns-3 {
+  column-count: 3;
+  column-gap: 2rem;
+  column-rule: 1px solid #e5e7eb;
+}
+
+/* Prevent table and headings breaking across columns awkwardly */
+.doc-columns-2 table,
+.doc-columns-3 table,
+.doc-columns-2 h1,
+.doc-columns-2 h2,
+.doc-columns-3 h1,
+.doc-columns-3 h2 {
+  break-inside: avoid;
+}
+
+/* Dark Mode TipTap Editor Styles */
+.dark .tiptap {
+  color: #f8fafc;
+}
+
+.dark .tiptap h1,
+.dark .tiptap h2,
+.dark .tiptap h3,
+.dark .tiptap h4,
+.dark .tiptap h5 {
+  color: #f8fafc;
+}
+
+.dark .tiptap h6 {
+  color: #94a3b8;
+}
+
+.dark .tiptap p.is-editor-empty:first-child::before {
+  color: #64748b;
+}
+
+.dark .tiptap table th {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+.dark .tiptap table td {
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.dark .doc-columns-2,
+.dark .doc-columns-3 {
+  column-rule-color: #334155;
+}
