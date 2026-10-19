@@ -20,7 +20,12 @@ export default function Home() {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-gray-50 px-4">
         <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 max-w-sm w-full text-center">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">Tasknotes</h1>
+          <div className="flex justify-center mb-3">
+            <img src="/icon.svg" alt="Tasknotes" className="w-12 h-12 rounded-xl shadow-xs" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            Task<span className="text-blue-600">notes</span>
+          </h1>
           <p className="text-gray-500 mb-6">Your all-in-one productivity workspace.</p>
 
           {authError && (

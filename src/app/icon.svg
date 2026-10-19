@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient: Royal Blue to Deep Indigo -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+
+    <!-- Emerald Check Badge Gradient -->
+    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow for Note Sheet -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.25" />
+    </filter>
+
+    <!-- Badge Shadow -->
+    <filter id="badgeShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Note Sheet with Folded Corner -->
+  <g filter="url(#cardShadow)">
+    <path
+      d="M 126 88
+         L 284 88
+         L 364 168
+         L 364 398
+         A 20 20 0 0 1 344 418
+         L 126 418
+         A 20 20 0 0 1 106 398
+         L 106 108
+         A 20 20 0 0 1 126 88 Z"
+      fill="#ffffff"
+    />
+
+    <!-- Folded Corner Flap -->
+    <path
+      d="M 284 88
+         L 284 150
+         A 18 18 0 0 0 302 168
+         L 364 168 Z"
+      fill="#dbeafe"
+    />
+  </g>
+
+  <!-- Note Lines (representing notes and headings) -->
+  <rect x="152" y="152" width="96" height="18" rx="9" fill="#3b82f6" />
+  <rect x="152" y="204" width="164" height="16" rx="8" fill="#93c5fd" />
+  <rect x="152" y="248" width="132" height="16" rx="8" fill="#93c5fd" />
+  <rect x="152" y="292" width="90" height="16" rx="8" fill="#cbd5e1" />
+
+  <!-- Task Checkmark Badge (Bottom Right overlapping the note) -->
+  <g filter="url(#badgeShadow)">
+    <!-- High-Contrast Outer White Ring -->
+    <circle cx="346" cy="346" r="76" fill="#ffffff" />
+    <!-- Vibrant Emerald Circle -->
+    <circle cx="346" cy="346" r="66" fill="url(#checkGrad)" />
+    <!-- Crisp White Checkmark -->
+    <path
+      d="M 322 346
+         L 340 364
+         L 372 326"
+      fill="none"
+      stroke="#ffffff"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

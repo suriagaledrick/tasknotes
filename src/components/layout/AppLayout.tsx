@@ -56,9 +56,11 @@ export default function AppLayout({
         {/* Left: Brand Logo & Navigation Links */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:bg-blue-700 transition">
-              TN
-            </div>
+            <img
+              src="/icon.svg"
+              alt="Tasknotes"
+              className="w-8 h-8 rounded-xl shadow-xs group-hover:scale-105 transition shrink-0"
+            />
             <span className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
               Task<span className="text-blue-600 dark:text-blue-400">notes</span>
             </span>
