@@ -21,7 +21,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  AlertCircle,
   ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
@@ -72,7 +71,7 @@ export default function WorkspaceCalendarPane({
   const selectedDayTasks = tasks.filter((t) => t.task.dueDate === selectedDayStr);
 
   return (
-    <div className="w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col h-full shrink-0 transition-all select-none">
+    <div className="w-full md:w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col h-full shrink-0 transition-all select-none">
       {/* Pane Header */}
       <div className="p-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -92,7 +91,7 @@ export default function WorkspaceCalendarPane({
           </Link>
           <button
             onClick={onToggleCollapse}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md transition cursor-pointer"
+            className="hidden md:inline-flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md transition cursor-pointer"
             title="Collapse Calendar Pane"
           >
             <ChevronRight className="w-4 h-4" />

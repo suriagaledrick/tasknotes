@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Note, NOTE_COLORS, NoteColor } from "@/types/note";
-import { Pin, Trash2, Palette, Columns, CheckSquare } from "lucide-react";
+import { Pin, Trash2, Palette, Columns } from "lucide-react";
 
 interface NoteCardProps {
   note: Note;
@@ -39,8 +39,10 @@ export default function NoteCard({
               e.stopPropagation();
               onTogglePin(note.id, note.isPinned);
             }}
-            className={`p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition ${
-              note.isPinned ? "text-blue-600 dark:text-blue-400 opacity-100" : "text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100"
+            className={`p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer ${
+              note.isPinned
+                ? "text-blue-600 dark:text-blue-400 opacity-100"
+                : "text-gray-400 dark:text-gray-500 opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
             }`}
             title={note.isPinned ? "Unpin note" : "Pin note"}
           >
@@ -69,9 +71,9 @@ export default function NoteCard({
           )}
         </div>
 
-        {/* Action Buttons (Google Keep style on card hover) */}
+        {/* Action Buttons (Always accessible on mobile touch, hover on desktop) */}
         <div
-          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Color Palette Popover */}
@@ -79,7 +81,7 @@ export default function NoteCard({
             <button
               type="button"
               onClick={() => setShowPalette(!showPalette)}
-              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition"
+              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition cursor-pointer"
               title="Change color"
             >
               <Palette className="w-3.5 h-3.5" />

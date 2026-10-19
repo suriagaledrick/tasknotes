@@ -1,5 +1,5 @@
-import { Note, NoteColor } from "@/types/note";
-import { Board, BoardColumn, Task } from "@/types/board";
+import { Note } from "@/types/note";
+import { Board, Task } from "@/types/board";
 import { createNote, deleteNote } from "@/lib/notesService";
 import { updateBoard } from "@/lib/boardsService";
 

@@ -184,31 +184,41 @@ input::placeholder, textarea::placeholder {
   pointer-events: none;
 }
 
-/* Multi-column layout */
+/* Hide scrollbars for clean mobile touch scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Multi-column layout (active on tablet & desktop) */
 .doc-columns-1 {
   column-count: 1;
 }
 
-.doc-columns-2 {
-  column-count: 2;
-  column-gap: 2.5rem;
-  column-rule: 1px solid #e5e7eb;
-}
+@media (min-width: 640px) {
+  .doc-columns-2 {
+    column-count: 2;
+    column-gap: 2.5rem;
+    column-rule: 1px solid #e5e7eb;
+  }
 
-.doc-columns-3 {
-  column-count: 3;
-  column-gap: 2rem;
-  column-rule: 1px solid #e5e7eb;
-}
+  .doc-columns-3 {
+    column-count: 3;
+    column-gap: 2rem;
+    column-rule: 1px solid #e5e7eb;
+  }
 
-/* Prevent table and headings breaking across columns awkwardly */
-.doc-columns-2 table,
-.doc-columns-3 table,
-.doc-columns-2 h1,
-.doc-columns-2 h2,
-.doc-columns-3 h1,
-.doc-columns-3 h2 {
-  break-inside: avoid;
+  .doc-columns-2 table,
+  .doc-columns-3 table,
+  .doc-columns-2 h1,
+  .doc-columns-2 h2,
+  .doc-columns-3 h1,
+  .doc-columns-3 h2 {
+    break-inside: avoid;
+  }
 }
 
 /* Dark Mode TipTap Editor Styles */

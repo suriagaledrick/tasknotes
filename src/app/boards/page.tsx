@@ -9,9 +9,11 @@ import {
   createBoard,
   updateBoard,
   deleteBoard,
+  reorderBoards,
 } from "@/lib/boardsService";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
-import { Kanban, Plus, Trash2, FolderKanban, Search, X } from "lucide-react";
+import BoardTabs from "@/components/kanban/BoardTabs";
+import { Kanban, FolderKanban, X } from "lucide-react";
 
 export default function BoardsPage() {
   const { user } = useAuth();
@@ -97,7 +99,7 @@ export default function BoardsPage() {
 
   // Handle Delete Board
   const handleDeleteBoard = async (boardId: string) => {
-    if (!user) return;
+    if (!user || boards.length <= 1) return;
     if (!confirm("Are you sure you want to delete this board?")) return;
     try {
       await deleteBoard(user.uid, boardId);
@@ -109,63 +111,74 @@ export default function BoardsPage() {
     }
   };
 
+  // Handle Reorder Boards
+  const handleReorderBoards = async (newBoards: Board[]) => {
+    setBoards(newBoards);
+    if (!user) return;
+    try {
+      await reorderBoards(user.uid, newBoards.map((b) => b.id));
+    } catch (err) {
+      console.error("Error persisting board order:", err);
+    }
+  };
+
+  // Handle Update Board Color
+  const handleUpdateBoardColor = async (boardId: string, color: string) => {
+    setBoards((prev) =>
+      prev.map((b) => (b.id === boardId ? { ...b, color } : b))
+    );
+    if (!user) return;
+    try {
+      await updateBoard(user.uid, boardId, { color });
+    } catch (err) {
+      console.error("Error updating board color:", err);
+    }
+  };
+
+  // Handle Rename Board
+  const handleRenameBoard = async (boardId: string, newTitle: string) => {
+    setBoards((prev) =>
+      prev.map((b) => (b.id === boardId ? { ...b, title: newTitle } : b))
+    );
+    if (!user) return;
+    try {
+      await updateBoard(user.uid, boardId, { title: newTitle });
+    } catch (err) {
+      console.error("Error renaming board:", err);
+    }
+  };
+
   return (
     <AppLayout>
-      <div className="flex flex-col h-[calc(100vh-6rem)]">
+      <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100dvh-6rem)]">
         {/* Top Header & Board Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl">
-              <Kanban className="w-6 h-6" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl shrink-0">
+              <Kanban className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {activeBoard?.title || "Task Boards"}
-                </h1>
-                {activeBoard && boards.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBoard(activeBoard.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 rounded-md transition"
-                    title="Delete board"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+                {activeBoard?.title || "Task Boards"}
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {activeBoard?.description || "Trello-style drag & drop task management"}
               </p>
             </div>
           </div>
 
           {/* Board Switcher Tabs & New Board button */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800/80 p-1 rounded-xl">
-              {boards.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setSelectedBoardId(b.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    selectedBoardId === b.id
-                      ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xs font-semibold"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  {b.title}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsNewBoardModalOpen(true)}
-              className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-2 rounded-xl shadow-xs transition shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" /> New Board
-            </button>
+          <div className="min-w-0">
+            <BoardTabs
+              boards={boards}
+              selectedBoardId={selectedBoardId}
+              onSelectBoard={(id) => setSelectedBoardId(id)}
+              onReorderBoards={handleReorderBoards}
+              onNewBoard={() => setIsNewBoardModalOpen(true)}
+              onDeleteBoard={handleDeleteBoard}
+              onUpdateBoardColor={handleUpdateBoardColor}
+              onRenameBoard={handleRenameBoard}
+            />
           </div>
         </div>
 
@@ -194,13 +207,16 @@ export default function BoardsPage() {
 
         {/* Create Board Modal */}
         {isNewBoardModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-6">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-5 sm:p-6 max-h-[90dvh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-200">
+              {/* Mobile Drag Indicator */}
+              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-3 sm:hidden" />
+
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900 dark:text-white text-base">Create New Board</h3>
                 <button
                   onClick={() => setIsNewBoardModalOpen(false)}
-                  className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -239,13 +255,13 @@ export default function BoardsPage() {
                   <button
                     type="button"
                     onClick={() => setIsNewBoardModalOpen(false)}
-                    className="text-xs text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="text-xs text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="text-xs bg-blue-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-blue-700 shadow-xs"
+                    className="text-xs bg-blue-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-blue-700 shadow-xs cursor-pointer"
                   >
                     Create Board
                   </button>

@@ -15,7 +15,6 @@ interface KanbanBoardProps {
 export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) {
   const [columns, setColumns] = useState<BoardColumn[]>(board.columns || []);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [activeColumnIdForTask, setActiveColumnIdForTask] = useState<string | null>(null);
 
   // Quick card add state per column
   const [addingToColId, setAddingToColId] = useState<string | null>(null);
@@ -169,13 +168,13 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
   };
 
   return (
-    <div className="flex-1 overflow-x-auto pb-6">
+    <div className="flex-1 overflow-x-auto pb-6 no-scrollbar">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex items-start gap-4 min-h-[calc(100vh-14rem)]">
+        <div className="flex items-start gap-3 sm:gap-4 min-h-[calc(100vh-14rem)] snap-x snap-mandatory px-3 sm:px-0">
           {columns.map((column) => (
             <div
               key={column.id}
-              className="w-72 sm:w-80 shrink-0 bg-gray-100/80 dark:bg-gray-900/70 rounded-2xl p-3 border border-gray-200/80 dark:border-gray-800 flex flex-col max-h-[calc(100vh-14rem)] shadow-xs"
+              className="w-[85vw] sm:w-80 shrink-0 snap-center bg-gray-100/80 dark:bg-gray-900/70 rounded-2xl p-3 border border-gray-200/80 dark:border-gray-800 flex flex-col max-h-[calc(100vh-14rem)] shadow-xs"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between px-2 py-1 mb-2">
@@ -226,10 +225,7 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
                         key={task.id}
                         task={task}
                         index={index}
-                        onSelect={(t) => {
-                          setActiveTask(t);
-                          setActiveColumnIdForTask(column.id);
-                        }}
+                        onSelect={(t) => setActiveTask(t)}
                       />
                     ))}
                     {provided.placeholder}
@@ -286,7 +282,7 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
           ))}
 
           {/* Add Another List (Column) */}
-          <div className="w-72 sm:w-80 shrink-0">
+          <div className="w-[85vw] sm:w-80 shrink-0 snap-center">
             {isAddingCol ? (
               <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl p-3 border border-gray-200 dark:border-gray-800 shadow-xs space-y-2">
                 <input

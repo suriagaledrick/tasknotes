@@ -163,7 +163,7 @@ export default function NotesPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 pb-16">
         {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
@@ -171,7 +171,7 @@ export default function NotesPage() {
               <StickyNote className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes & Notepad</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notes & Notepad</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Rich text, Docs/Word column layouts, and Google Keep color tags
               </p>
@@ -314,24 +314,14 @@ export default function NotesPage() {
 
         {/* Edit Note Modal / Full View */}
         {editingNote && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-              <div className="sticky top-0 right-0 z-10 flex justify-end p-2 pointer-events-none">
-                <button
-                  type="button"
-                  onClick={() => setEditingNote(null)}
-                  className="p-1.5 rounded-full bg-neutral-900/80 text-white hover:bg-neutral-900 pointer-events-auto transition"
-                  title="Close modal"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/70 sm:backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-3xl overflow-hidden rounded-none sm:rounded-2xl shadow-2xl flex flex-col">
               <RichTextEditor
                 initialTitle={editingNote.title}
                 initialContent={editingNote.content}
                 initialColor={editingNote.color}
                 initialColumns={editingNote.columnCount}
+                onClose={() => setEditingNote(null)}
                 onSave={handleUpdateNote}
               />
             </div>

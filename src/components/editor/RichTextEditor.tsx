@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
@@ -25,6 +25,9 @@ import {
   Trash2,
   Plus,
   Minus,
+  ArrowLeft,
+  Check,
+  X,
 } from "lucide-react";
 import { NoteColor, NOTE_COLORS } from "@/types/note";
 
@@ -35,6 +38,7 @@ interface RichTextEditorProps {
   initialColumns?: 1 | 2 | 3;
   onChange?: (data: { title: string; content: string; previewText: string; color: NoteColor; columnCount: 1 | 2 | 3 }) => void;
   onSave?: (data: { title: string; content: string; previewText: string; color: NoteColor; columnCount: 1 | 2 | 3 }) => void;
+  onClose?: () => void;
 }
 
 export default function RichTextEditor({
@@ -44,6 +48,7 @@ export default function RichTextEditor({
   initialColumns = 1,
   onChange,
   onSave,
+  onClose,
 }: RichTextEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [selectedColor, setSelectedColor] = useState<NoteColor>(initialColor);
@@ -67,6 +72,8 @@ export default function RichTextEditor({
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
+        link: false,
+        underline: false,
       }),
       Underline,
       Highlight.configure({ multicolor: true }),
@@ -199,9 +206,176 @@ export default function RichTextEditor({
   const colorConfig = NOTE_COLORS.find((c) => c.id === selectedColor) || NOTE_COLORS[0];
 
   return (
-    <div className={`rounded-xl border shadow-sm transition-all overflow-hidden ${colorConfig.bgClass} ${colorConfig.darkBgClass} ${colorConfig.borderClass} ${colorConfig.darkBorderClass || "dark:border-neutral-700"}`}>
-      {/* Top Toolbar matching user's design reference */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-900 text-neutral-200 border-b border-neutral-800 text-sm">
+    <div
+      className={`flex flex-col h-full flex-1 rounded-none sm:rounded-2xl border-0 sm:border shadow-sm transition-all overflow-hidden ${colorConfig.bgClass} ${colorConfig.darkBgClass} ${colorConfig.borderClass} ${colorConfig.darkBorderClass || "dark:border-neutral-700"}`}
+    >
+      {/* Tier 1 Header Action Bar: Done/Close, Color Picker, Columns, and Save (ALWAYS VISIBLE & NEVER CUT OFF) */}
+      <div className="flex items-center justify-between px-3 py-2 bg-neutral-900 border-b border-neutral-800 text-xs shrink-0 text-neutral-200 gap-2">
+        <div className="flex items-center gap-2">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-medium transition cursor-pointer text-xs shrink-0"
+              title="Close Note"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Done</span>
+            </button>
+          )}
+
+          {/* Color Picker */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setColorMenuOpen(!colorMenuOpen);
+                setHeadingMenuOpen(false);
+                setListMenuOpen(false);
+                setTableMenuOpen(false);
+                setColumnMenuOpen(false);
+                setHighlightMenuOpen(false);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 cursor-pointer"
+              title="Note Color"
+            >
+              <span
+                className="w-3.5 h-3.5 rounded-full border border-neutral-600 shrink-0"
+                style={{ backgroundColor: colorConfig.bgClass.includes("white") ? "#fff" : undefined }}
+              />
+              <span className="font-medium text-xs">{colorConfig.name}</span>
+              <ChevronDown className="w-3 h-3 text-neutral-400" />
+            </button>
+
+            {colorMenuOpen && (
+              <div className="absolute left-0 top-full mt-1.5 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-3 z-50 grid grid-cols-6 gap-2 w-56">
+                {NOTE_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleColorChange(c.id)}
+                    className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer ${
+                      selectedColor === c.id
+                        ? "border-blue-500 scale-110 ring-2 ring-blue-400/40"
+                        : "border-neutral-700"
+                    }`}
+                    style={{
+                      backgroundColor:
+                        c.id === "default" ? "#ffffff" :
+                        c.id === "coral" ? "#fee2e2" :
+                        c.id === "peach" ? "#ffedd5" :
+                        c.id === "sand" ? "#fef3c7" :
+                        c.id === "mint" ? "#d1fae5" :
+                        c.id === "sage" ? "#dcfce7" :
+                        c.id === "fog" ? "#cffafe" :
+                        c.id === "storm" ? "#dbeafe" :
+                        c.id === "dusk" ? "#e0e7ff" :
+                        c.id === "blossom" ? "#f3e8ff" : "#f5f5f4",
+                    }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right side: Columns Selector & Save Note */}
+        <div className="flex items-center gap-2">
+          {/* Docs/Word Column Selector */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setColumnMenuOpen(!columnMenuOpen);
+                setHeadingMenuOpen(false);
+                setListMenuOpen(false);
+                setTableMenuOpen(false);
+                setHighlightMenuOpen(false);
+                setColorMenuOpen(false);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 cursor-pointer"
+              title="Columns Style (Docs/Word)"
+            >
+              <Columns className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="font-mono text-xs">{columnCount} Col</span>
+              <ChevronDown className="w-3 h-3 text-neutral-400" />
+            </button>
+
+            {columnMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-48 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl py-1 z-50 text-xs">
+                <div className="px-3 py-1 font-semibold text-neutral-400 text-[11px] uppercase">
+                  Column Layout
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleColumnChange(1)}
+                  className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 cursor-pointer ${
+                    columnCount === 1 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
+                  }`}
+                >
+                  <span>1 Column (Standard)</span>
+                  {columnCount === 1 && <span>✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleColumnChange(2)}
+                  className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 cursor-pointer ${
+                    columnCount === 2 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
+                  }`}
+                >
+                  <span>2 Columns (Docs)</span>
+                  {columnCount === 2 && <span>✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleColumnChange(3)}
+                  className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 cursor-pointer ${
+                    columnCount === 3 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
+                  }`}
+                >
+                  <span>3 Columns (Magazine)</span>
+                  {columnCount === 3 && <span>✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Save Button: Prominent and never cut off */}
+          {onSave && (
+            <button
+              type="button"
+              onClick={() => {
+                onSave({
+                  title,
+                  content: editor.getHTML(),
+                  previewText: editor.getText().slice(0, 160),
+                  color: selectedColor,
+                  columnCount,
+                });
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs transition cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Save</span>
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-neutral-400 hover:text-white rounded-md cursor-pointer ml-0.5"
+              title="Close Note"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tier 2: Formatting Toolbar */}
+      <div className="flex items-center gap-1 px-2.5 py-1.5 bg-neutral-900/90 border-b border-neutral-800 text-sm overflow-x-auto no-scrollbar whitespace-nowrap shrink-0">
         {/* 1. Hierarchy / Headings Dropdown (Image 1: Title, Subtitle, Heading, Subheading, Section, Subsection, Body) */}
         <div className="relative">
           <button
@@ -522,63 +696,7 @@ export default function RichTextEditor({
           )}
         </div>
 
-        {/* 5. Docs/Word Column Style (1 col, 2 cols, 3 cols) */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setColumnMenuOpen(!columnMenuOpen);
-              setHeadingMenuOpen(false);
-              setListMenuOpen(false);
-              setTableMenuOpen(false);
-              setHighlightMenuOpen(false);
-            }}
-            className="flex items-center gap-1 px-2 py-1.5 rounded hover:bg-neutral-800 text-xs transition text-neutral-200"
-            title="Columns Style (Docs/Word)"
-          >
-            <Columns className="w-4 h-4" />
-            <span className="text-[11px] font-mono">{columnCount} Col</span>
-            <ChevronDown className="w-3 h-3 text-neutral-400" />
-          </button>
-
-          {columnMenuOpen && (
-            <div className="absolute left-0 top-full mt-1 w-44 bg-neutral-900 border border-neutral-800 rounded-lg shadow-2xl py-1 z-50 text-xs">
-              <div className="px-3 py-1 font-semibold text-neutral-400 text-[11px] uppercase">Column Layout</div>
-              <button
-                type="button"
-                onClick={() => handleColumnChange(1)}
-                className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 ${
-                  columnCount === 1 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
-                }`}
-              >
-                <span>1 Column (Standard)</span>
-                {columnCount === 1 && <span>✓</span>}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleColumnChange(2)}
-                className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 ${
-                  columnCount === 2 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
-                }`}
-              >
-                <span>2 Columns (Docs/Word)</span>
-                {columnCount === 2 && <span>✓</span>}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleColumnChange(3)}
-                className={`w-full flex items-center justify-between px-3 py-2 hover:bg-neutral-800 ${
-                  columnCount === 3 ? "text-blue-400 bg-neutral-800/60 font-medium" : "text-neutral-200"
-                }`}
-              >
-                <span>3 Columns (Magazine)</span>
-                {columnCount === 3 && <span>✓</span>}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 6. Highlighter / Text Color Picker (Image 2: Ab ✎) */}
+        {/* 5. Highlighter / Text Color Picker */}
         <div className="relative">
           <button
             type="button"
@@ -631,74 +749,10 @@ export default function RichTextEditor({
             </div>
           )}
         </div>
-
-        <div className="flex-1" />
-
-        {/* 7. Google Keep Note Background Palette Selector */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setColorMenuOpen(!colorMenuOpen)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300"
-            title="Note Color"
-          >
-            <span className="w-3 h-3 rounded-full border border-neutral-600" style={{ backgroundColor: colorConfig.bgClass.includes("white") ? "#fff" : undefined }} />
-            <span className="hidden sm:inline">{colorConfig.name}</span>
-            <ChevronDown className="w-3 h-3 text-neutral-400" />
-          </button>
-
-          {colorMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-3 z-50 grid grid-cols-6 gap-2 w-52">
-              {NOTE_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleColorChange(c.id)}
-                  className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                    selectedColor === c.id ? "border-blue-500 scale-110 ring-2 ring-blue-400/40" : "border-neutral-700"
-                  }`}
-                  style={{
-                    backgroundColor:
-                      c.id === "default" ? "#ffffff" :
-                      c.id === "coral" ? "#fee2e2" :
-                      c.id === "peach" ? "#ffedd5" :
-                      c.id === "sand" ? "#fef3c7" :
-                      c.id === "mint" ? "#d1fae5" :
-                      c.id === "sage" ? "#dcfce7" :
-                      c.id === "fog" ? "#cffafe" :
-                      c.id === "storm" ? "#dbeafe" :
-                      c.id === "dusk" ? "#e0e7ff" :
-                      c.id === "blossom" ? "#f3e8ff" : "#f5f5f4",
-                  }}
-                  title={c.name}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Save button if onSave provided */}
-        {onSave && (
-          <button
-            type="button"
-            onClick={() => {
-              onSave({
-                title,
-                content: editor.getHTML(),
-                previewText: editor.getText().slice(0, 160),
-                color: selectedColor,
-                columnCount,
-              });
-            }}
-            className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded text-xs transition"
-          >
-            Save
-          </button>
-        )}
       </div>
 
       {/* Editor Content Area */}
-      <div className="p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 min-h-[300px]">
         {/* Note Title Input */}
         <input
           type="text"
@@ -716,7 +770,7 @@ export default function RichTextEditor({
             }
           }}
           placeholder="Title"
-          className="w-full text-2xl md:text-3xl font-bold bg-transparent outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 mb-4 text-gray-900 dark:text-neutral-100 border-none p-0 focus:ring-0"
+          className="w-full text-xl sm:text-2xl md:text-3xl font-bold bg-transparent outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 mb-3 sm:mb-4 text-gray-900 dark:text-neutral-100 border-none p-0 focus:ring-0"
         />
 
         {/* Multi-column wrapper for Docs/Word column style */}

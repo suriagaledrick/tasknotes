@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserBoards, updateBoard } from "@/lib/boardsService";
-import { Board, BoardColumn, Task, PRIORITY_CONFIG } from "@/types/board";
+import { Board, Task, PRIORITY_CONFIG } from "@/types/board";
 import TaskModal from "@/components/kanban/TaskModal";
 import {
   format,
@@ -329,17 +329,17 @@ function CalendarContent() {
       {viewMode === "month" ? (
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {/* Month Navigation Toolbar */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/60">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/60">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                 {format(currentDate, "MMMM yyyy")}
               </h2>
               {/* Current Date Indicator */}
-              <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                Today: {format(new Date(), "MMM d, yyyy")}
+              <span className="text-[11px] sm:text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                Today: {format(new Date(), "MMM d")}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-end gap-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -347,14 +347,14 @@ function CalendarContent() {
                   setCurrentDate(now);
                   setSelectedDay(now);
                 }}
-                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium text-gray-700 dark:text-gray-200 shadow-xs"
+                className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium text-gray-700 dark:text-gray-200 shadow-xs cursor-pointer"
               >
                 Go to Today
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 shadow-xs"
+                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 shadow-xs cursor-pointer"
                 title="Previous month"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -362,7 +362,7 @@ function CalendarContent() {
               <button
                 type="button"
                 onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 shadow-xs"
+                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 shadow-xs cursor-pointer"
                 title="Next month"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -371,7 +371,7 @@ function CalendarContent() {
           </div>
 
           {/* Weekdays Header */}
-          <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 text-center py-2.5 bg-gray-100/60 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300">
+          <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 text-center py-2 sm:py-2.5 bg-gray-100/60 dark:bg-gray-800 text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-300">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
               <div key={day}>{day}</div>
             ))}
@@ -390,19 +390,19 @@ function CalendarContent() {
                 <div
                   key={dateKey}
                   onClick={() => setSelectedDay(day)}
-                  className={`min-h-[110px] sm:min-h-[130px] p-2 flex flex-col justify-between transition-colors group cursor-pointer ${
+                  className={`min-h-[58px] sm:min-h-[120px] p-1 sm:p-2 flex flex-col justify-between transition-colors group cursor-pointer ${
                     !isCurrentMonth
                       ? "bg-gray-50/40 dark:bg-gray-950/40 text-gray-300 dark:text-gray-600"
                       : isSelected
-                      ? "bg-blue-50/40 dark:bg-blue-950/30 ring-1 ring-inset ring-blue-300 dark:ring-blue-700"
+                      ? "bg-blue-50/50 dark:bg-blue-950/40 ring-2 ring-inset ring-blue-500/60 dark:ring-blue-500"
                       : "hover:bg-gray-50/80 dark:hover:bg-gray-800/60 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
                   }`}
                 >
-                  <div>
+                  <div className="w-full">
                     {/* Day Number Row */}
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between sm:mb-1">
                       <span
-                        className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+                        className={`text-[11px] sm:text-xs font-semibold w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full transition-all ${
                           isTodayDate
                             ? "bg-blue-600 text-white font-bold ring-2 ring-blue-300 dark:ring-blue-800 shadow-xs"
                             : isSelected
@@ -423,15 +423,46 @@ function CalendarContent() {
                           setQuickAddDate(dateKey);
                           setIsQuickAddOpen(true);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                        className="hidden sm:inline-flex opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
                         title="Schedule task on this date"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    {/* Day Tasks Pills */}
-                    <div className="space-y-1 overflow-hidden">
+                    {/* Mobile: Dot indicators for scheduled tasks */}
+                    {dayTasks.length > 0 && (
+                      <div className="flex sm:hidden items-center justify-center gap-0.5 mt-1 flex-wrap">
+                        {dayTasks.slice(0, 3).map((item) => {
+                          const priority = item.task.priority || "medium";
+                          const isDone = item.columnTitle.toLowerCase() === "done";
+                          const isTaskOverdue = item.task.dueDate! < todayStr && !isDone;
+
+                          return (
+                            <span
+                              key={item.task.id}
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isDone
+                                  ? "bg-gray-400"
+                                  : isTaskOverdue
+                                  ? "bg-red-500"
+                                  : priority === "urgent"
+                                  ? "bg-rose-500"
+                                  : priority === "high"
+                                  ? "bg-orange-500"
+                                  : "bg-blue-500"
+                              }`}
+                            />
+                          );
+                        })}
+                        {dayTasks.length > 3 && (
+                          <span className="text-[9px] text-gray-400 font-bold leading-none">+</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Desktop: Day Tasks Pills */}
+                    <div className="hidden sm:block space-y-1 overflow-hidden">
                       {dayTasks.slice(0, 3).map((item) => {
                         const priority = item.task.priority || "medium";
                         const isDone = item.columnTitle.toLowerCase() === "done";
@@ -481,6 +512,107 @@ function CalendarContent() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Selected Day Agenda Drawer / Section (Crucial for mobile usability) */}
+          <div className="p-3.5 sm:p-4 bg-gray-50/60 dark:bg-gray-900/60 border-t border-gray-200 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                  {isToday(selectedDay)
+                    ? "Today's Schedule"
+                    : format(selectedDay, "EEEE, MMMM d, yyyy")}
+                </span>
+                <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                  (
+                  {
+                    scheduledTasks.filter(
+                      (item) => item.task.dueDate === format(selectedDay, "yyyy-MM-dd")
+                    ).length
+                  }{" "}
+                  tasks)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickAddDate(format(selectedDay, "yyyy-MM-dd"));
+                  setIsQuickAddOpen(true);
+                }}
+                className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Task</span>
+              </button>
+            </div>
+
+            {(() => {
+              const selectedDateKey = format(selectedDay, "yyyy-MM-dd");
+              const tasksForSelectedDay = scheduledTasks.filter(
+                (item) => item.task.dueDate === selectedDateKey
+              );
+
+              if (tasksForSelectedDay.length === 0) {
+                return (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">
+                    No tasks scheduled for this day. Tap &quot;+ Add Task&quot; to plan ahead.
+                  </p>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-2">
+                  {tasksForSelectedDay.map((item) => {
+                    const isDone = item.columnTitle.toLowerCase() === "done";
+                    const isTaskOverdue = item.task.dueDate! < todayStr && !isDone;
+                    const priority = item.task.priority || "medium";
+
+                    return (
+                      <div
+                        key={item.task.id}
+                        onClick={() => setActiveTaskItem(item)}
+                        className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2.5 bg-white dark:bg-gray-800 shadow-xs hover:border-blue-400 ${
+                          isDone ? "opacity-60" : ""
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span
+                              className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${
+                                PRIORITY_CONFIG[priority].bgClass
+                              } ${PRIORITY_CONFIG[priority].textClass} ${
+                                PRIORITY_CONFIG[priority].borderClass
+                              }`}
+                            >
+                              {priority}
+                            </span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                              {item.boardTitle} • {item.columnTitle}
+                            </span>
+                          </div>
+                          <h4
+                            className={`text-xs font-semibold text-gray-900 dark:text-white truncate ${
+                              isDone ? "line-through text-gray-400" : ""
+                            }`}
+                          >
+                            {item.task.title}
+                          </h4>
+                        </div>
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            isDone
+                              ? "bg-gray-400"
+                              : isTaskOverdue
+                              ? "bg-red-500"
+                              : "bg-blue-500"
+                          }`}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       ) : (
@@ -569,14 +701,17 @@ function CalendarContent() {
 
       {/* Quick Add Scheduled Task Modal */}
       {isQuickAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md p-5 sm:p-6 max-h-[90dvh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-200">
+            {/* Mobile Drag Indicator */}
+            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-3 sm:hidden" />
+
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white text-base">Schedule New Task</h3>
               <button
                 type="button"
                 onClick={() => setIsQuickAddOpen(false)}
-                className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -650,13 +785,13 @@ function CalendarContent() {
                 <button
                   type="button"
                   onClick={() => setIsQuickAddOpen(false)}
-                  className="text-xs text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="text-xs text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="text-xs bg-blue-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-blue-700 shadow-xs"
+                  className="text-xs bg-blue-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-blue-700 shadow-xs cursor-pointer"
                 >
                   Save & Schedule
                 </button>

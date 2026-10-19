@@ -50,9 +50,9 @@ export default function AppLayout({
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-200">
+    <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-200">
       {/* Top Navbar */}
-      <header className="flex items-center justify-between h-14 px-4 md:px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-30 transition-colors">
+      <header className="flex items-center justify-between h-14 px-3 md:px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-30 transition-colors">
         {/* Left: Brand Logo & Navigation Links */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 group">
@@ -64,7 +64,7 @@ export default function AppLayout({
             </span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden sm:flex items-center gap-1">
             {navLinks.map((item) => {
               const Icon = item.icon;
@@ -87,8 +87,8 @@ export default function AppLayout({
           </nav>
         </div>
 
-        {/* Center: Global Search Bar */}
-        <div className="flex-1 max-w-md mx-4">
+        {/* Center: Global Search Bar (Tablet & Desktop) */}
+        <div className="hidden sm:flex flex-1 max-w-md mx-4">
           <div
             onClick={() => setSearchOpen(true)}
             className="relative w-full flex items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200/80 dark:hover:bg-gray-700/80 px-3 py-1.5 rounded-xl cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition"
@@ -103,8 +103,17 @@ export default function AppLayout({
           </div>
         </div>
 
-        {/* Right: Theme Toggle & Account Menu */}
-        <div className="flex items-center gap-2">
+        {/* Right: Search (Mobile), Theme Toggle & Account Menu */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Mobile Search Icon Button */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="sm:hidden p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+            title="Search notes, tasks, boards"
+          >
+            <Search className="w-4 h-4" />
+          </button>
           {/* Theme Toggle Button */}
           <button
             type="button"
@@ -229,11 +238,39 @@ export default function AppLayout({
       {/* Main Content Area */}
       <main
         className={`flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-950 flex flex-col ${
-          noPadding ? "p-0" : "p-4 md:p-6"
+          noPadding ? "p-0" : "p-3 sm:p-4 md:p-6"
         }`}
       >
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="sm:hidden flex items-center justify-around h-16 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shrink-0 z-40 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors">
+        {navLinks.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-medium transition cursor-pointer ${
+                isActive
+                  ? "text-blue-600 dark:text-blue-400 font-semibold"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <div
+                className={`p-1 rounded-xl transition ${
+                  isActive ? "bg-blue-50 dark:bg-blue-950/60" : ""
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
+              </div>
+              <span className="mt-0.5">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* Global Search Modal */}
       <GlobalSearchModal

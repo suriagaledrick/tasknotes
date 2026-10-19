@@ -6,7 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Note } from "@/types/note";
 import { Board, BoardColumn, Task } from "@/types/board";
 import { getUserNotes, createNote, updateNote, deleteNote } from "@/lib/notesService";
-import { getUserBoards, createBoard, updateBoard, deleteBoard } from "@/lib/boardsService";
+import { getUserBoards, createBoard, updateBoard, deleteBoard, reorderBoards } from "@/lib/boardsService";
+import BoardTabs from "@/components/kanban/BoardTabs";
 import {
   moveNoteToTask,
   moveTaskToNote,
@@ -23,9 +24,9 @@ import {
   MoreHorizontal,
   Trash2,
   X,
-  Maximize2,
-  Minimize2,
   Sparkles,
+  StickyNote,
+  Calendar,
 } from "lucide-react";
 
 export default function UnifiedWorkspace() {
@@ -35,7 +36,10 @@ export default function UnifiedWorkspace() {
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Pane toggle states
+  // Mobile segmented tab state
+  const [mobileTab, setMobileTab] = useState<"notes" | "board" | "calendar">("board");
+
+  // Pane toggle states (Desktop)
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
 
@@ -495,6 +499,43 @@ export default function UnifiedWorkspace() {
     }
   };
 
+  // Reorder Boards (Drag & Drop or buttons)
+  const handleReorderBoards = async (newBoards: Board[]) => {
+    setBoards(newBoards);
+    if (!user) return;
+    try {
+      await reorderBoards(user.uid, newBoards.map((b) => b.id));
+    } catch (err) {
+      console.error("Error persisting board order:", err);
+    }
+  };
+
+  // Change Board Color
+  const handleUpdateBoardColor = async (boardId: string, color: string) => {
+    setBoards((prev) =>
+      prev.map((b) => (b.id === boardId ? { ...b, color } : b))
+    );
+    if (!user) return;
+    try {
+      await updateBoard(user.uid, boardId, { color });
+    } catch (err) {
+      console.error("Error updating board color:", err);
+    }
+  };
+
+  // Rename Board
+  const handleRenameBoard = async (boardId: string, newTitle: string) => {
+    setBoards((prev) =>
+      prev.map((b) => (b.id === boardId ? { ...b, title: newTitle } : b))
+    );
+    if (!user) return;
+    try {
+      await updateBoard(user.uid, boardId, { title: newTitle });
+    } catch (err) {
+      console.error("Error renaming board:", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -504,85 +545,101 @@ export default function UnifiedWorkspace() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-full flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950">
+      {/* Mobile Segmented Tab Controller */}
+      <div className="md:hidden flex items-center justify-center p-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
+        <div className="flex bg-gray-100 dark:bg-gray-800/90 p-1 rounded-xl w-full max-w-sm text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setMobileTab("notes")}
+            className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              mobileTab === "notes"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+            <span>Notes ({notes.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("board")}
+            className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              mobileTab === "board"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            <Kanban className="w-3.5 h-3.5" />
+            <span>Board</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("calendar")}
+            className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              mobileTab === "calendar"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Calendar</span>
+          </button>
+        </div>
+      </div>
+
       <DragDropContext onDragEnd={handleUniversalDragEnd}>
         {/* 3-Pane Command Center Layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* PANE 1: LEFT - Google Keep & Notes Scratchpad */}
-          <WorkspaceNotesPane
-            notes={notes}
-            isCollapsed={leftCollapsed}
-            onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
-            onSelectNote={(note) => setEditingNote(note)}
-            onQuickAddNote={handleQuickAddNote}
-            onTogglePin={async (id, pin) => {
-              if (!user) return;
-              await updateNote(user.uid, id, { isPinned: !pin });
-              setNotes((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, isPinned: !pin } : n))
-              );
-            }}
-          />
+          <div className={`h-full ${mobileTab === "notes" ? "flex flex-1 w-full" : "hidden md:flex"}`}>
+            <WorkspaceNotesPane
+              notes={notes}
+              isCollapsed={leftCollapsed}
+              onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
+              onSelectNote={(note) => setEditingNote(note)}
+              onQuickAddNote={handleQuickAddNote}
+              onTogglePin={async (id, pin) => {
+                if (!user) return;
+                await updateNote(user.uid, id, { isPinned: !pin });
+                setNotes((prev) =>
+                  prev.map((n) => (n.id === id ? { ...n, isPinned: !pin } : n))
+                );
+              }}
+            />
+          </div>
 
           {/* PANE 2: CENTER - Trello Kanban Board */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+          <div className={`flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950 ${mobileTab === "board" ? "flex w-full" : "hidden md:flex"}`}>
             {/* Center Header: Board Switcher & Controls */}
-            <div className="h-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 overflow-x-auto py-1">
-                <Kanban className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-xs">
-                  {boards.map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedBoardId(b.id)}
-                      className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-                        activeBoard?.id === b.id
-                          ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-semibold"
-                          : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                      }`}
-                    >
-                      {b.title}
-                    </button>
-                  ))}
-                </div>
-
-                {/* + New Board Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsNewBoardModalOpen(true)}
-                  className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-2.5 py-1 rounded-lg shadow-xs transition shrink-0 cursor-pointer"
-                  title="Create a new board"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Board</span>
-                </button>
-
-                {/* Delete Board Button (if more than 1 board) */}
-                {activeBoard && boards.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBoard(activeBoard.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 rounded-md transition cursor-pointer"
-                    title={`Delete "${activeBoard.title}"`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+            <div className="h-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar min-w-0 flex-1">
+                <Kanban className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 hidden sm:block" />
+                <BoardTabs
+                  boards={boards}
+                  selectedBoardId={selectedBoardId}
+                  onSelectBoard={(id) => setSelectedBoardId(id)}
+                  onReorderBoards={handleReorderBoards}
+                  onNewBoard={() => setIsNewBoardModalOpen(true)}
+                  onDeleteBoard={handleDeleteBoard}
+                  onUpdateBoardColor={handleUpdateBoardColor}
+                  onRenameBoard={handleRenameBoard}
+                />
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-900/50">
+              <div className="flex items-center gap-2 text-xs text-gray-400 shrink-0">
+                <span className="hidden lg:inline-flex items-center gap-1 text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-900/50">
                   <Sparkles className="w-3 h-3" /> Drag cards across all 3 panels!
                 </span>
               </div>
             </div>
 
             {/* Kanban Columns Horizontal Scroll Area */}
-            <div className="flex-1 overflow-x-auto p-4 flex items-start gap-4">
+            <div className="flex-1 overflow-x-auto p-3 sm:p-4 flex items-start gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar">
               {activeBoard?.columns.map((column) => (
                 <div
                   key={column.id}
-                  className="w-72 shrink-0 bg-gray-100/90 dark:bg-gray-900/90 rounded-2xl p-3 border border-gray-200/90 dark:border-gray-800 flex flex-col max-h-full shadow-xs"
+                  className="w-[85vw] sm:w-72 shrink-0 snap-center bg-gray-100/90 dark:bg-gray-900/90 rounded-2xl p-3 border border-gray-200/90 dark:border-gray-800 flex flex-col max-h-full shadow-xs"
                 >
                   {/* Column Header */}
                   <div className="flex items-center justify-between px-1 mb-2">
@@ -688,7 +745,7 @@ export default function UnifiedWorkspace() {
               ))}
 
               {/* Add New List */}
-              <div className="w-72 shrink-0">
+              <div className="w-[85vw] sm:w-72 shrink-0 snap-center">
                 {isAddingCol ? (
                   <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl p-3 border border-gray-200 dark:border-gray-800 shadow-xs space-y-2">
                     <input
@@ -733,34 +790,27 @@ export default function UnifiedWorkspace() {
           </div>
 
           {/* PANE 3: RIGHT - Live Calendar & Agenda Schedule */}
-          <WorkspaceCalendarPane
-            tasks={allScheduledTasks}
-            isCollapsed={rightCollapsed}
-            onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
-            onSelectTask={(task) => setEditingTask(task)}
-          />
+          <div className={`h-full ${mobileTab === "calendar" ? "flex flex-1 w-full" : "hidden md:flex"}`}>
+            <WorkspaceCalendarPane
+              tasks={allScheduledTasks}
+              isCollapsed={rightCollapsed}
+              onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
+              onSelectTask={(task) => setEditingTask(task)}
+            />
+          </div>
         </div>
       </DragDropContext>
 
       {/* Note Editing Modal */}
       {editingNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-            <div className="sticky top-0 right-0 z-10 flex justify-end p-2 pointer-events-none">
-              <button
-                type="button"
-                onClick={() => setEditingNote(null)}
-                className="p-1.5 rounded-full bg-neutral-900/80 text-white hover:bg-neutral-900 pointer-events-auto transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/70 sm:backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-3xl overflow-hidden rounded-none sm:rounded-2xl shadow-2xl flex flex-col">
             <RichTextEditor
               initialTitle={editingNote.title}
               initialContent={editingNote.content}
               initialColor={editingNote.color}
               initialColumns={editingNote.columnCount}
+              onClose={() => setEditingNote(null)}
               onSave={async (updated) => {
                 if (!user) return;
                 await updateNote(user.uid, editingNote.id, updated);
