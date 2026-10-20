@@ -261,7 +261,13 @@ export default function WorkspaceCalendarPane({
 
         {/* Quick Drop Helper Tip */}
         <div className="mt-4 p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 leading-snug">
-          💡 <span className="font-semibold">Tip:</span> Drag any note or Kanban card directly onto a calendar date above to schedule it!
+          💡 <span className="font-semibold">Tip:</span>{" "}
+          <span className="hidden md:inline">
+            Drag any note or Kanban card directly onto a calendar date above to schedule it!
+          </span>
+          <span className="md:hidden">
+            Tap any date to inspect its agenda, or use ⋯ on cards to quickly schedule tasks!
+          </span>
         </div>
       </div>
     </div>

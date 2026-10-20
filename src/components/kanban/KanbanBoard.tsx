@@ -168,7 +168,7 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
   };
 
   return (
-    <div className="flex-1 overflow-x-auto pb-6 no-scrollbar">
+    <div className="flex-1 overflow-x-auto pb-6 no-scrollbar md:bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:md:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:16px_16px] rounded-2xl">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex items-start gap-3 sm:gap-4 min-h-[calc(100vh-14rem)] snap-x snap-mandatory px-3 sm:px-0">
           {columns.map((column) => (
@@ -226,6 +226,30 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
                         task={task}
                         index={index}
                         onSelect={(t) => setActiveTask(t)}
+                        availableColumns={columns
+                          .filter((c) => c.id !== column.id)
+                          .map((c) => ({ id: c.id, title: c.title }))}
+                        onMoveToColumn={(taskId, targetColId) => {
+                          const newColumns = columns.map((c) => {
+                            if (c.id === column.id) {
+                              return { ...c, tasks: c.tasks.filter((t) => t.id !== taskId) };
+                            }
+                            if (c.id === targetColId) {
+                              return { ...c, tasks: [...c.tasks, task] };
+                            }
+                            return c;
+                          });
+                          setColumns(newColumns);
+                          onUpdateBoard(newColumns);
+                        }}
+                        onScheduleDate={(taskId, dateStr) => {
+                          const newColumns = columns.map((c) => ({
+                            ...c,
+                            tasks: c.tasks.map((t) => (t.id === taskId ? { ...t, dueDate: dateStr } : t)),
+                          }));
+                          setColumns(newColumns);
+                          onUpdateBoard(newColumns);
+                        }}
                       />
                     ))}
                     {provided.placeholder}

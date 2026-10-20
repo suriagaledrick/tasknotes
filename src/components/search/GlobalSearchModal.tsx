@@ -43,6 +43,19 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
     fetchData();
   }, [isOpen, user]);
 
+  // Global listener for Escape key to dismiss search modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Extract all tasks with board and column metadata
   const allTasks: { task: Task; boardTitle: string; columnTitle: string }[] = [];
   boards.forEach((board) => {
@@ -81,8 +94,14 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 sm:pt-20 p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[75vh]">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-3 sm:pt-20 p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[75vh] cursor-default"
+      >
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3.5 border-b border-gray-200 dark:border-gray-800">
           <Search className="w-5 h-5 text-gray-400 mr-3 shrink-0" />
@@ -90,6 +109,12 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                onClose();
+              }
+            }}
             placeholder="Search notes, tasks, boards, or labels... (e.g. 'Meeting', 'Bug')"
             autoFocus
             className="w-full text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none bg-transparent"

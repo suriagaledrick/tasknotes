@@ -3,8 +3,22 @@
 import React, { useState } from "react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { Note, NOTE_COLORS } from "@/types/note";
-import { StickyNote, Plus, Pin, ChevronLeft, ChevronRight, X, ArrowUpRight } from "lucide-react";
+import {
+  StickyNote,
+  Plus,
+  Pin,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ArrowUpRight,
+  GripVertical,
+  MoreHorizontal,
+  Kanban,
+  Clock,
+  Calendar,
+} from "lucide-react";
 import Link from "next/link";
+import { format, addDays } from "date-fns";
 
 interface WorkspaceNotesPaneProps {
   notes: Note[];
@@ -13,6 +27,8 @@ interface WorkspaceNotesPaneProps {
   onSelectNote: (note: Note) => void;
   onQuickAddNote: (title: string, content: string) => Promise<void>;
   onTogglePin: (noteId: string, currentPin: boolean) => void;
+  onMoveNoteToBoard?: (note: Note) => void;
+  onScheduleNote?: (note: Note, dateStr: string) => void;
 }
 
 export default function WorkspaceNotesPane({
@@ -22,11 +38,17 @@ export default function WorkspaceNotesPane({
   onSelectNote,
   onQuickAddNote,
   onTogglePin,
+  onMoveNoteToBoard,
+  onScheduleNote,
 }: WorkspaceNotesPaneProps) {
   const [quickTitle, setQuickTitle] = useState("");
   const [quickContent, setQuickContent] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,21 +188,98 @@ export default function WorkspaceNotesPane({
                       }`}
                     >
                       <div className="flex items-start justify-between gap-1 mb-1">
-                        <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100 line-clamp-1">
-                          {note.title || "Untitled Note"}
-                        </h4>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePin(note.id, note.isPinned);
-                          }}
-                          className={`p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer ${
-                            note.isPinned ? "text-blue-600 dark:text-blue-400" : "text-gray-300 dark:text-gray-500 opacity-0 group-hover:opacity-100"
-                          }`}
-                        >
-                          <Pin className={`w-3 h-3 ${note.isPinned ? "fill-blue-600 dark:fill-blue-400" : ""}`} />
-                        </button>
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                          {/* Desktop Drag Grip Handle (⋮⋮) */}
+                          <span
+                            className="hidden md:inline-flex p-0.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-grab shrink-0"
+                            title="Drag note to board or calendar"
+                            aria-label="Drag handle"
+                          >
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </span>
+                          <h4 className="font-semibold text-xs text-gray-900 dark:text-gray-100 line-clamp-1 truncate">
+                            {note.title || "Untitled Note"}
+                          </h4>
+                        </div>
+
+                        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          {/* Mobile Quick Action Menu */}
+                          {(onMoveNoteToBoard || onScheduleNote) && (
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setMenuNoteId(menuNoteId === note.id ? null : note.id)}
+                                className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition cursor-pointer"
+                                title="Quick actions"
+                                aria-label="Note quick actions"
+                              >
+                                <MoreHorizontal className="w-3.5 h-3.5" />
+                              </button>
+
+                              {menuNoteId === note.id && (
+                                <div
+                                  className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-1.5 z-50 text-xs"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {onMoveNoteToBoard && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        onMoveNoteToBoard(note);
+                                        setMenuNoteId(null);
+                                      }}
+                                      className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                    >
+                                      <Kanban className="w-3.5 h-3.5 text-blue-500" />
+                                      <span>Move to Board</span>
+                                    </button>
+                                  )}
+
+                                  {onScheduleNote && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          onScheduleNote(note, todayStr);
+                                          setMenuNoteId(null);
+                                        }}
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                      >
+                                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Schedule Today</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          onScheduleNote(note, tomorrowStr);
+                                          setMenuNoteId(null);
+                                        }}
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                      >
+                                        <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                        <span>Schedule Tomorrow</span>
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTogglePin(note.id, note.isPinned);
+                            }}
+                            className={`p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer ${
+                              note.isPinned ? "text-blue-600 dark:text-blue-400" : "text-gray-300 dark:text-gray-500 opacity-0 group-hover:opacity-100"
+                            }`}
+                            aria-label={note.isPinned ? "Unpin note" : "Pin note"}
+                          >
+                            <Pin className={`w-3 h-3 ${note.isPinned ? "fill-blue-600 dark:fill-blue-400" : ""}`} />
+                          </button>
+                        </div>
                       </div>
 
                       <p className="text-[11px] text-gray-600 dark:text-gray-300 line-clamp-3 leading-relaxed">
@@ -188,7 +287,10 @@ export default function WorkspaceNotesPane({
                       </p>
 
                       <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500">
-                        <span className="text-[9px] font-mono opacity-60">Drag to board/calendar</span>
+                        <span className="text-[9px] font-mono opacity-60">
+                          <span className="hidden md:inline">Drag to board/calendar</span>
+                          <span className="md:hidden">Tap ⋯ to move/schedule</span>
+                        </span>
                         {note.tags && note.tags.length > 0 && (
                           <span className="bg-black/5 dark:bg-white/10 px-1.5 py-0.2 rounded text-gray-600 dark:text-gray-300">
                             {note.tags[0]}

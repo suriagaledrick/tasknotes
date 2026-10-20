@@ -13,6 +13,7 @@ import {
 } from "@/lib/boardsService";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import BoardTabs from "@/components/kanban/BoardTabs";
+import BoardsSkeleton from "@/components/skeletons/BoardsSkeleton";
 import { Kanban, FolderKanban, X } from "lucide-react";
 
 export default function BoardsPage() {
@@ -184,9 +185,7 @@ export default function BoardsPage() {
 
         {/* Board Content */}
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
+          <BoardsSkeleton />
         ) : activeBoard ? (
           <KanbanBoard
             board={activeBoard}

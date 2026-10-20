@@ -3,17 +3,14 @@
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import UnifiedWorkspace from "@/components/workspace/UnifiedWorkspace";
+import WorkspaceSkeleton from "@/components/skeletons/WorkspaceSkeleton";
 import { LogIn } from "lucide-react";
 
 export default function Home() {
   const { user, loading, authError, loginWithGoogle } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <WorkspaceSkeleton />;
   }
 
   if (!user) {

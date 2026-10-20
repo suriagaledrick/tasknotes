@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserBoards, updateBoard } from "@/lib/boardsService";
 import { Board, Task, PRIORITY_CONFIG } from "@/types/board";
 import TaskModal from "@/components/kanban/TaskModal";
+import CalendarSkeleton from "@/components/skeletons/CalendarSkeleton";
 import {
   format,
   addMonths,
@@ -208,6 +209,10 @@ function CalendarContent() {
     }
   };
 
+  if (loading) {
+    return <CalendarSkeleton />;
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Header & Controls Bar */}
@@ -401,19 +406,48 @@ function CalendarContent() {
                   <div className="w-full">
                     {/* Day Number Row */}
                     <div className="flex items-center justify-between sm:mb-1">
-                      <span
-                        className={`text-[11px] sm:text-xs font-semibold w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full transition-all ${
-                          isTodayDate
-                            ? "bg-blue-600 text-white font-bold ring-2 ring-blue-300 dark:ring-blue-800 shadow-xs"
-                            : isSelected
-                            ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-100 dark:bg-blue-900/40"
-                            : isCurrentMonth
-                            ? "text-gray-700 dark:text-gray-200"
-                            : "text-gray-400 dark:text-gray-600"
-                        }`}
-                      >
-                        {format(day, "d")}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[11px] sm:text-xs font-semibold w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full transition-all ${
+                            isTodayDate
+                              ? "bg-blue-600 text-white font-bold ring-2 ring-blue-300 dark:ring-blue-800 shadow-xs"
+                              : isSelected
+                              ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-100 dark:bg-blue-900/40"
+                              : isCurrentMonth
+                              ? "text-gray-700 dark:text-gray-200"
+                              : "text-gray-400 dark:text-gray-600"
+                          }`}
+                        >
+                          {format(day, "d")}
+                        </span>
+
+                        {/* Desktop: Scheduled Task Dots alongside date */}
+                        {dayTasks.length > 0 && (
+                          <div className="hidden sm:flex items-center gap-1" aria-label={`${dayTasks.length} tasks scheduled`}>
+                            {dayTasks.slice(0, 3).map((item) => {
+                              const priority = item.task.priority || "medium";
+                              const isDone = item.columnTitle.toLowerCase() === "done";
+                              const isTaskOverdue = item.task.dueDate! < todayStr && !isDone;
+                              const dotColor = isDone
+                                ? "bg-emerald-500"
+                                : isTaskOverdue
+                                ? "bg-red-500"
+                                : priority === "urgent"
+                                ? "bg-rose-500"
+                                : priority === "high"
+                                ? "bg-orange-500"
+                                : "bg-blue-500";
+                              return (
+                                <span
+                                  key={item.task.id}
+                                  className={`w-1.5 h-1.5 rounded-full ${dotColor} ring-1 ring-white dark:ring-gray-900 shadow-xs`}
+                                  title={`${item.task.title} (${priority})`}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
 
                       <button
                         type="button"
@@ -425,6 +459,7 @@ function CalendarContent() {
                         }}
                         className="hidden sm:inline-flex opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
                         title="Schedule task on this date"
+                        aria-label={`Schedule task on ${dateKey}`}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -818,13 +853,7 @@ function CalendarContent() {
 export default function CalendarPage() {
   return (
     <AppLayout>
-      <Suspense
-        fallback={
-          <div className="flex h-96 items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        }
-      >
+      <Suspense fallback={<CalendarSkeleton />}>
         <CalendarContent />
       </Suspense>
     </AppLayout>

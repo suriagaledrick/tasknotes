@@ -7,6 +7,7 @@ import { Note, NoteColor } from "@/types/note";
 import { getUserNotes, createNote, updateNote, deleteNote } from "@/lib/notesService";
 import NoteCard from "@/components/notes/NoteCard";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import NotesSkeleton from "@/components/skeletons/NotesSkeleton";
 import { StickyNote, Plus, Search, Pin, X } from "lucide-react";
 
 export default function NotesPage() {
@@ -250,10 +251,7 @@ export default function NotesPage() {
 
         {/* Loading Indicator */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-xs text-gray-500 mt-3">Loading notes...</p>
-          </div>
+          <NotesSkeleton />
         ) : (
           <>
             {/* Pinned Notes Section */}
