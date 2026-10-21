@@ -16,6 +16,8 @@ import {
   Kanban,
   Clock,
   Calendar,
+  Archive,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { format, addDays } from "date-fns";
@@ -29,6 +31,8 @@ interface WorkspaceNotesPaneProps {
   onTogglePin: (noteId: string, currentPin: boolean) => void;
   onMoveNoteToBoard?: (note: Note) => void;
   onScheduleNote?: (note: Note, dateStr: string) => void;
+  onArchiveNote?: (noteId: string) => void;
+  onMoveNoteToTrash?: (noteId: string) => void;
 }
 
 export default function WorkspaceNotesPane({
@@ -40,6 +44,8 @@ export default function WorkspaceNotesPane({
   onTogglePin,
   onMoveNoteToBoard,
   onScheduleNote,
+  onArchiveNote,
+  onMoveNoteToTrash,
 }: WorkspaceNotesPaneProps) {
   const [quickTitle, setQuickTitle] = useState("");
   const [quickContent, setQuickContent] = useState("");
@@ -204,7 +210,7 @@ export default function WorkspaceNotesPane({
 
                         <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                           {/* Mobile Quick Action Menu */}
-                          {(onMoveNoteToBoard || onScheduleNote) && (
+                          {(onMoveNoteToBoard || onScheduleNote || onArchiveNote || onMoveNoteToTrash) && (
                             <div className="relative">
                               <button
                                 type="button"
@@ -228,7 +234,7 @@ export default function WorkspaceNotesPane({
                                         onMoveNoteToBoard(note);
                                         setMenuNoteId(null);
                                       }}
-                                      className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                      className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
                                     >
                                       <Kanban className="w-3.5 h-3.5 text-blue-500" />
                                       <span>Move to Board</span>
@@ -243,7 +249,7 @@ export default function WorkspaceNotesPane({
                                           onScheduleNote(note, todayStr);
                                           setMenuNoteId(null);
                                         }}
-                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
                                       >
                                         <Clock className="w-3.5 h-3.5 text-amber-500" />
                                         <span>Schedule Today</span>
@@ -254,12 +260,43 @@ export default function WorkspaceNotesPane({
                                           onScheduleNote(note, tomorrowStr);
                                           setMenuNoteId(null);
                                         }}
-                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5"
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
                                       >
                                         <Calendar className="w-3.5 h-3.5 text-indigo-500" />
                                         <span>Schedule Tomorrow</span>
                                       </button>
                                     </>
+                                  )}
+
+                                  {(onArchiveNote || onMoveNoteToTrash) && (
+                                    <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+                                      {onArchiveNote && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            onArchiveNote(note.id);
+                                            setMenuNoteId(null);
+                                          }}
+                                          className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                          <Archive className="w-3.5 h-3.5 text-gray-500" />
+                                          <span>Archive Note</span>
+                                        </button>
+                                      )}
+                                      {onMoveNoteToTrash && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            onMoveNoteToTrash(note.id);
+                                            setMenuNoteId(null);
+                                          }}
+                                          className="w-full text-left px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 cursor-pointer font-medium"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                          <span>Move to Trash</span>
+                                        </button>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               )}

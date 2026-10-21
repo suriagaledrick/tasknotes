@@ -91,10 +91,11 @@ function CalendarContent() {
   // Extract all tasks with due dates
   const scheduledTasks: CalendarTaskItem[] = [];
   boards.forEach((board) => {
+    if (board.isArchived || board.isTrashed) return;
     if (filterBoardId !== "all" && board.id !== filterBoardId) return;
     board.columns?.forEach((col) => {
       col.tasks?.forEach((task) => {
-        if (task.dueDate) {
+        if (task.dueDate && !task.isArchived && !task.isTrashed) {
           scheduledTasks.push({
             task,
             boardId: board.id,
@@ -149,7 +150,72 @@ function CalendarContent() {
   };
 
   // Handle Delete Task from Modal
-  const handleDeleteTask = async (taskId: string) => {
+  // Handle Move Task to Trash from Modal
+  const handleMoveTaskToTrash = async (taskId: string) => {
+    if (!user || !activeTaskItem) return;
+    const targetBoard = boards.find((b) => b.id === activeTaskItem.boardId);
+    if (!targetBoard) return;
+
+    const newColumns = targetBoard.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isTrashed: true,
+              trashedAt: new Date().toISOString(),
+              isArchived: false,
+              archivedAt: null,
+            }
+          : t
+      ),
+    }));
+
+    try {
+      await updateBoard(user.uid, targetBoard.id, { columns: newColumns });
+      setBoards((prev) =>
+        prev.map((b) => (b.id === targetBoard.id ? { ...b, columns: newColumns } : b))
+      );
+      setActiveTaskItem(null);
+    } catch (err) {
+      console.error("Failed to move task to trash:", err);
+    }
+  };
+
+  // Handle Archive Task from Modal
+  const handleArchiveTask = async (taskId: string) => {
+    if (!user || !activeTaskItem) return;
+    const targetBoard = boards.find((b) => b.id === activeTaskItem.boardId);
+    if (!targetBoard) return;
+
+    const newColumns = targetBoard.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isArchived: true,
+              archivedAt: new Date().toISOString(),
+              isTrashed: false,
+              trashedAt: null,
+            }
+          : t
+      ),
+    }));
+
+    try {
+      await updateBoard(user.uid, targetBoard.id, { columns: newColumns });
+      setBoards((prev) =>
+        prev.map((b) => (b.id === targetBoard.id ? { ...b, columns: newColumns } : b))
+      );
+      setActiveTaskItem(null);
+    } catch (err) {
+      console.error("Failed to archive task:", err);
+    }
+  };
+
+  const handleDeleteTask = handleMoveTaskToTrash;
+  const oldHandleDelete = async (taskId: string) => {
     if (!user || !activeTaskItem) return;
     const targetBoard = boards.find((b) => b.id === activeTaskItem.boardId);
     if (!targetBoard) return;
@@ -844,6 +910,7 @@ function CalendarContent() {
           onClose={() => setActiveTaskItem(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
+          onArchive={handleArchiveTask}
         />
       )}
     </div>

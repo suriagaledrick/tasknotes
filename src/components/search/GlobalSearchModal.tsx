@@ -59,8 +59,10 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   // Extract all tasks with board and column metadata
   const allTasks: { task: Task; boardTitle: string; columnTitle: string }[] = [];
   boards.forEach((board) => {
+    if (board.isTrashed) return;
     board.columns?.forEach((col) => {
       col.tasks?.forEach((t) => {
+        if (t.isTrashed) return;
         allTasks.push({
           task: t,
           boardTitle: board.title,
@@ -73,7 +75,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   const q = query.trim().toLowerCase();
 
   const filteredNotes = notes.filter((n) => {
-    if (!q) return false;
+    if (!q || n.isTrashed) return false;
     return (
       n.title?.toLowerCase().includes(q) ||
       n.previewText?.toLowerCase().includes(q) ||
@@ -82,7 +84,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   });
 
   const filteredTasks = allTasks.filter(({ task, boardTitle }) => {
-    if (!q) return false;
+    if (!q || task.isTrashed) return false;
     return (
       task.title?.toLowerCase().includes(q) ||
       task.description?.toLowerCase().includes(q) ||

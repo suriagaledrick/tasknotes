@@ -12,6 +12,8 @@ import {
   StickyNote,
   Clock,
   ArrowRight,
+  Archive,
+  Trash2,
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 
@@ -24,6 +26,8 @@ interface TaskCardProps {
   onMoveToColumn?: (taskId: string, targetColId: string) => void;
   onScheduleDate?: (taskId: string, dateStr: string) => void;
   onConvertToNote?: (task: Task) => void;
+  onArchiveTask?: (taskId: string) => void;
+  onMoveToTrash?: (taskId: string) => void;
 }
 
 export default function TaskCard({
@@ -35,6 +39,8 @@ export default function TaskCard({
   onMoveToColumn,
   onScheduleDate,
   onConvertToNote,
+  onArchiveTask,
+  onMoveToTrash,
 }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const priorityConfig = task.priority ? PRIORITY_CONFIG[task.priority] : null;
@@ -113,7 +119,7 @@ export default function TaskCard({
           )}
 
           {/* Quick Action Menu Button */}
-          {(onMoveToColumn || onScheduleDate || onConvertToNote) && (
+          {(onMoveToColumn || onScheduleDate || onConvertToNote || onArchiveTask || onMoveToTrash) && (
             <div className="relative">
               <button
                 type="button"
@@ -181,6 +187,38 @@ export default function TaskCard({
                           <span className="truncate">{col.title}</span>
                         </button>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Archive & Trash Actions */}
+                  {(onArchiveTask || onMoveToTrash) && (
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+                      {onArchiveTask && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onArchiveTask(task.id);
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Archive className="w-3.5 h-3.5 text-gray-500" />
+                          <span>Archive Task</span>
+                        </button>
+                      )}
+                      {onMoveToTrash && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onMoveToTrash(task.id);
+                            setMenuOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 cursor-pointer font-medium"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          <span>Move to Trash</span>
+                        </button>
+                      )}
                     </div>
                   )}
 

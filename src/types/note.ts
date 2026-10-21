@@ -22,6 +22,10 @@ export interface Note {
   tags: string[];
   createdAt: any;
   updatedAt: any;
+  isArchived?: boolean;
+  archivedAt?: any;
+  isTrashed?: boolean;
+  trashedAt?: any;
 }
 
 export const NOTE_COLORS: { id: NoteColor; name: string; bgClass: string; borderClass: string; darkBgClass: string; darkBorderClass: string }[] = [

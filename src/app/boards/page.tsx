@@ -8,13 +8,15 @@ import {
   getUserBoards,
   createBoard,
   updateBoard,
-  deleteBoard,
+  moveBoardToTrash,
+  archiveBoard,
   reorderBoards,
 } from "@/lib/boardsService";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import BoardTabs from "@/components/kanban/BoardTabs";
 import BoardsSkeleton from "@/components/skeletons/BoardsSkeleton";
-import { Kanban, FolderKanban, X } from "lucide-react";
+import Link from "next/link";
+import { Kanban, FolderKanban, X, Archive, Trash2 } from "lucide-react";
 
 export default function BoardsPage() {
   const { user } = useAuth();
@@ -32,7 +34,9 @@ export default function BoardsPage() {
     try {
       setLoading(true);
       const userBoards = await getUserBoards(user.uid);
-      if (userBoards.length === 0) {
+      const activeOnly = userBoards.filter((b) => !b.isArchived && !b.isTrashed);
+
+      if (activeOnly.length === 0) {
         // Auto-create initial default board
         const newId = await createBoard(
           user.uid,
@@ -44,8 +48,8 @@ export default function BoardsPage() {
         setSelectedBoardId(newId || refreshed[0]?.id || null);
       } else {
         setBoards(userBoards);
-        if (!selectedBoardId || !userBoards.find((b) => b.id === selectedBoardId)) {
-          setSelectedBoardId(userBoards[0].id);
+        if (!selectedBoardId || !activeOnly.find((b) => b.id === selectedBoardId)) {
+          setSelectedBoardId(activeOnly[0].id);
         }
       }
     } catch (err) {
@@ -61,7 +65,8 @@ export default function BoardsPage() {
     }
   }, [user]);
 
-  const activeBoard = boards.find((b) => b.id === selectedBoardId);
+  const activeBoards = boards.filter((b) => !b.isArchived && !b.isTrashed);
+  const activeBoard = activeBoards.find((b) => b.id === selectedBoardId) || activeBoards[0];
 
   // Handle Board update (columns / cards)
   const handleUpdateBoardColumns = async (updatedColumns: BoardColumn[]) => {
@@ -98,17 +103,33 @@ export default function BoardsPage() {
     }
   };
 
-  // Handle Delete Board
-  const handleDeleteBoard = async (boardId: string) => {
-    if (!user || boards.length <= 1) return;
-    if (!confirm("Are you sure you want to delete this board?")) return;
+  // Handle Move Board to Trash (15-day retention)
+  const handleMoveBoardToTrash = async (boardId: string) => {
+    if (!user || activeBoards.length <= 1) return;
     try {
-      await deleteBoard(user.uid, boardId);
       const updated = boards.filter((b) => b.id !== boardId);
       setBoards(updated);
-      setSelectedBoardId(updated[0]?.id || null);
+      const remainingActive = activeBoards.filter((b) => b.id !== boardId);
+      setSelectedBoardId(remainingActive[0]?.id || null);
+      await moveBoardToTrash(user.uid, boardId);
     } catch (err) {
-      console.error("Error deleting board:", err);
+      console.error("Error moving board to trash:", err);
+      await fetchBoards();
+    }
+  };
+
+  // Handle Archive Board
+  const handleArchiveBoard = async (boardId: string) => {
+    if (!user || activeBoards.length <= 1) return;
+    try {
+      const updated = boards.filter((b) => b.id !== boardId);
+      setBoards(updated);
+      const remainingActive = activeBoards.filter((b) => b.id !== boardId);
+      setSelectedBoardId(remainingActive[0]?.id || null);
+      await archiveBoard(user.uid, boardId);
+    } catch (err) {
+      console.error("Error archiving board:", err);
+      await fetchBoards();
     }
   };
 
@@ -168,18 +189,38 @@ export default function BoardsPage() {
             </div>
           </div>
 
-          {/* Board Switcher Tabs & New Board button */}
-          <div className="min-w-0">
-            <BoardTabs
-              boards={boards}
-              selectedBoardId={selectedBoardId}
-              onSelectBoard={(id) => setSelectedBoardId(id)}
-              onReorderBoards={handleReorderBoards}
-              onNewBoard={() => setIsNewBoardModalOpen(true)}
-              onDeleteBoard={handleDeleteBoard}
-              onUpdateBoardColor={handleUpdateBoardColor}
-              onRenameBoard={handleRenameBoard}
-            />
+          {/* Header Actions: Archive, Trash, Board Switcher Tabs & New Board button */}
+          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+            <Link
+              href="/archive"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition shrink-0"
+              title="View Archived Tasks & Boards"
+            >
+              <Archive className="w-3.5 h-3.5 text-gray-500" />
+              <span className="hidden sm:inline">Archive</span>
+            </Link>
+            <Link
+              href="/trash"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition shrink-0"
+              title="View Trashed Tasks & Boards"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              <span className="hidden sm:inline">Trash</span>
+            </Link>
+
+            <div className="min-w-0 flex-1">
+              <BoardTabs
+                boards={activeBoards}
+                selectedBoardId={selectedBoardId}
+                onSelectBoard={(id) => setSelectedBoardId(id)}
+                onReorderBoards={handleReorderBoards}
+                onNewBoard={() => setIsNewBoardModalOpen(true)}
+                onDeleteBoard={handleMoveBoardToTrash}
+                onArchiveBoard={handleArchiveBoard}
+                onUpdateBoardColor={handleUpdateBoardColor}
+                onRenameBoard={handleRenameBoard}
+              />
+            </div>
           </div>
         </div>
 
@@ -197,7 +238,7 @@ export default function BoardsPage() {
             <p className="font-semibold text-gray-700 dark:text-gray-200">No boards found</p>
             <button
               onClick={() => setIsNewBoardModalOpen(true)}
-              className="mt-3 text-xs bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700"
+              className="mt-3 text-xs bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
             >
               Create your first board
             </button>

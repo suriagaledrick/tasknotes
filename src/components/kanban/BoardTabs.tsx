@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Board, BOARD_COLORS } from "@/types/board";
-import { Plus, MoreHorizontal, Trash2, ArrowLeft, ArrowRight, Edit2, Check, Palette } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, ArrowLeft, ArrowRight, Edit2, Check, Palette, Archive } from "lucide-react";
 
 interface BoardTabsProps {
   boards: Board[];
@@ -12,6 +12,7 @@ interface BoardTabsProps {
   onReorderBoards: (newBoards: Board[]) => void;
   onNewBoard: () => void;
   onDeleteBoard: (boardId: string) => void;
+  onArchiveBoard?: (boardId: string) => void;
   onUpdateBoardColor: (boardId: string, color: string) => void;
   onRenameBoard?: (boardId: string, newTitle: string) => void;
 }
@@ -23,6 +24,7 @@ export default function BoardTabs({
   onReorderBoards,
   onNewBoard,
   onDeleteBoard,
+  onArchiveBoard,
   onUpdateBoardColor,
   onRenameBoard,
 }: BoardTabsProps) {
@@ -355,8 +357,34 @@ export default function BoardTabs({
                   </div>
                 </div>
 
-                {/* Section 3: Delete Board */}
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                {/* Section 3: Archive & Move to Trash */}
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-1.5 space-y-1">
+                  {onArchiveBoard && (
+                    <button
+                      type="button"
+                      disabled={boards.length <= 1}
+                      onClick={() => {
+                        setOpenMenuBoardId(null);
+                        setMenuPosition(null);
+                        onArchiveBoard(menuBoard.id);
+                      }}
+                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition text-xs font-medium"
+                      title={
+                        boards.length <= 1
+                          ? "Cannot archive your only remaining board"
+                          : `Archive "${menuBoard.title}"`
+                      }
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Archive className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Archive Board</span>
+                      </span>
+                      {boards.length <= 1 && (
+                        <span className="text-[10px] text-gray-400">(Only board)</span>
+                      )}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     disabled={boards.length <= 1}
@@ -365,16 +393,16 @@ export default function BoardTabs({
                       setMenuPosition(null);
                       onDeleteBoard(menuBoard.id);
                     }}
-                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition font-medium"
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition text-xs font-medium"
                     title={
                       boards.length <= 1
                         ? "Cannot delete your only remaining board"
-                        : `Delete "${menuBoard.title}"`
+                        : `Move "${menuBoard.title}" to Trash`
                     }
                   >
                     <span className="flex items-center gap-1.5">
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Board</span>
+                      <span>Move to Trash</span>
                     </span>
                     {boards.length <= 1 && (
                       <span className="text-[10px] text-gray-400">(Only board)</span>

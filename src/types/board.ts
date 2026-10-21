@@ -9,6 +9,14 @@ export interface Task {
   labels?: string[];
   createdAt?: any;
   updatedAt?: any;
+  isArchived?: boolean;
+  archivedAt?: any;
+  isTrashed?: boolean;
+  trashedAt?: any;
+  boardId?: string;
+  boardTitle?: string;
+  columnId?: string;
+  columnTitle?: string;
 }
 
 export interface BoardColumn {
@@ -38,6 +46,10 @@ export interface Board {
   columns: BoardColumn[];
   createdAt: any;
   updatedAt: any;
+  isArchived?: boolean;
+  archivedAt?: any;
+  isTrashed?: boolean;
+  trashedAt?: any;
 }
 
 export const BOARD_COLORS: {

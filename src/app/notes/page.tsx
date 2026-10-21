@@ -4,11 +4,18 @@ import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Note, NoteColor } from "@/types/note";
-import { getUserNotes, createNote, updateNote, deleteNote } from "@/lib/notesService";
+import {
+  getUserNotes,
+  createNote,
+  updateNote,
+  moveNoteToTrash,
+  archiveNote,
+} from "@/lib/notesService";
 import NoteCard from "@/components/notes/NoteCard";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import NotesSkeleton from "@/components/skeletons/NotesSkeleton";
-import { StickyNote, Plus, Search, Pin, X } from "lucide-react";
+import Link from "next/link";
+import { StickyNote, Plus, Search, Pin, X, Archive, Trash2 } from "lucide-react";
 
 export default function NotesPage() {
   const { user } = useAuth();
@@ -134,23 +141,41 @@ export default function NotesPage() {
     }
   };
 
-  // Handle Delete Note
-  const handleDeleteNote = async (noteId: string) => {
+  // Handle Move Note to Trash (15-day retention)
+  const handleMoveToTrash = async (noteId: string) => {
     if (!user) return;
-    if (!confirm("Are you sure you want to delete this note?")) return;
     try {
-      await deleteNote(user.uid, noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
       if (editingNote?.id === noteId) {
         setEditingNote(null);
       }
+      await moveNoteToTrash(user.uid, noteId);
     } catch (err) {
-      console.error("Failed to delete note:", err);
+      console.error("Failed to move note to trash:", err);
+      await fetchNotes();
     }
   };
 
+  // Handle Archive Note
+  const handleArchiveNote = async (noteId: string) => {
+    if (!user) return;
+    try {
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (editingNote?.id === noteId) {
+        setEditingNote(null);
+      }
+      await archiveNote(user.uid, noteId);
+    } catch (err) {
+      console.error("Failed to archive note:", err);
+      await fetchNotes();
+    }
+  };
+
+  // Only display active (non-archived, non-trashed) notes in main view
+  const activeNotes = notes.filter((n) => !n.isArchived && !n.isTrashed);
+
   // Filter notes by search query
-  const filteredNotes = notes.filter((n) => {
+  const filteredNotes = activeNotes.filter((n) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -179,15 +204,34 @@ export default function NotesPage() {
             </div>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search notes..."
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          {/* Archive, Trash, Search Controls */}
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+            <Link
+              href="/archive"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              title="View Archived Notes"
+            >
+              <Archive className="w-3.5 h-3.5 text-gray-500" />
+              <span>Archive</span>
+            </Link>
+            <Link
+              href="/trash"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition"
+              title="View Trashed Notes"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              <span>Trash</span>
+            </Link>
+            <div className="relative flex-1 sm:w-56">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notes..."
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </div>
 
@@ -214,7 +258,7 @@ export default function NotesPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -233,14 +277,14 @@ export default function NotesPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="px-4 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  className="px-4 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveNewNote}
-                  className="px-5 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition"
+                  className="px-5 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition cursor-pointer"
                 >
                   Save Note
                 </button>
@@ -269,7 +313,8 @@ export default function NotesPage() {
                       onSelect={(n) => setEditingNote(n)}
                       onTogglePin={handleTogglePin}
                       onChangeColor={handleChangeColor}
-                      onDelete={handleDeleteNote}
+                      onDelete={handleMoveToTrash}
+                      onArchive={handleArchiveNote}
                     />
                   ))}
                 </div>
@@ -293,7 +338,8 @@ export default function NotesPage() {
                       onSelect={(n) => setEditingNote(n)}
                       onTogglePin={handleTogglePin}
                       onChangeColor={handleChangeColor}
-                      onDelete={handleDeleteNote}
+                      onDelete={handleMoveToTrash}
+                      onArchive={handleArchiveNote}
                     />
                   ))}
                 </div>

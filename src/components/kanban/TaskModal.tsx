@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Task, TaskPriority, PRIORITY_CONFIG, PRESET_LABELS } from "@/types/board";
-import { X, Calendar, Flag, Tag, Trash2, AlignLeft } from "lucide-react";
+import { X, Calendar, Flag, Tag, Trash2, AlignLeft, Archive } from "lucide-react";
 
 interface TaskModalProps {
   task: Task;
@@ -10,6 +10,7 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: (updatedTask: Task) => void;
   onDelete: (taskId: string) => void;
+  onArchive?: (taskId: string) => void;
 }
 
 export default function TaskModal({
@@ -18,6 +19,7 @@ export default function TaskModal({
   onClose,
   onSave,
   onDelete,
+  onArchive,
 }: TaskModalProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
@@ -177,19 +179,34 @@ export default function TaskModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-3.5 sm:p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={() => {
-              if (confirm("Delete this task?")) {
+        <div className="flex items-center justify-between p-3.5 sm:p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))] gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
                 onDelete(task.id);
                 onClose();
-              }
-            }}
-            className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition"
-          >
-            <Trash2 className="w-4 h-4" /> Delete Task
-          </button>
+              }}
+              className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition cursor-pointer"
+              title="Move task to trash (stored for 15 days)"
+            >
+              <Trash2 className="w-4 h-4" /> Move to Trash
+            </button>
+
+            {onArchive && (
+              <button
+                type="button"
+                onClick={() => {
+                  onArchive(task.id);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                title="Archive task"
+              >
+                <Archive className="w-4 h-4 text-gray-500" /> Archive Task
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-2">
             <button

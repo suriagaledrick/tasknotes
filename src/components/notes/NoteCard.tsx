@@ -2,14 +2,15 @@
 
 import React, { useState } from "react";
 import { Note, NOTE_COLORS, NoteColor } from "@/types/note";
-import { Pin, Trash2, Palette, Columns } from "lucide-react";
+import { Pin, Trash2, Palette, Columns, Archive } from "lucide-react";
 
 interface NoteCardProps {
   note: Note;
   onSelect: (note: Note) => void;
   onTogglePin: (noteId: string, currentPin: boolean) => void;
   onChangeColor: (noteId: string, color: NoteColor) => void;
-  onDelete: (noteId: string) => void;
+  onDelete: (noteId: string) => void; // Moves note to trash
+  onArchive?: (noteId: string) => void;
 }
 
 export default function NoteCard({
@@ -18,6 +19,7 @@ export default function NoteCard({
   onTogglePin,
   onChangeColor,
   onDelete,
+  onArchive,
 }: NoteCardProps) {
   const [showPalette, setShowPalette] = useState(false);
   const colorConfig = NOTE_COLORS.find((c) => c.id === note.color) || NOTE_COLORS[0];
@@ -118,12 +120,26 @@ export default function NoteCard({
             )}
           </div>
 
-          {/* Delete Button */}
+          {/* Archive Button */}
+          {onArchive && (
+            <button
+              type="button"
+              onClick={() => onArchive(note.id)}
+              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition cursor-pointer"
+              title="Archive note"
+              aria-label="Archive note"
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Move to Trash Button */}
           <button
             type="button"
             onClick={() => onDelete(note.id)}
-            className="p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
-            title="Delete note"
+            className="p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition cursor-pointer"
+            title="Move to trash"
+            aria-label="Move to trash"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

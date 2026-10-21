@@ -11,6 +11,8 @@ import {
   LayoutDashboard,
   Sun,
   Moon,
+  Archive,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +33,15 @@ export default function AppLayout({
   const [searchOpen, setSearchOpen] = useState(false);
 
   const navLinks = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/notes", label: "Notes", icon: StickyNote },
+    { href: "/boards", label: "Boards", icon: Kanban },
+    { href: "/calendar", label: "Calendar", icon: CalendarIcon },
+    { href: "/archive", label: "Archive", icon: Archive },
+    { href: "/trash", label: "Trash", icon: Trash2 },
+  ];
+
+  const mobileBottomNavLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/notes", label: "Notes", icon: StickyNote },
     { href: "/boards", label: "Boards", icon: Kanban },
@@ -200,9 +211,42 @@ export default function AppLayout({
                     </button>
                   </div>
 
+                  {/* Archive & Trash Quick Access */}
+                  <div className="border-b border-gray-100 dark:border-gray-800 pb-2 mb-2 space-y-1">
+                    <Link
+                      href="/archive"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition ${
+                        pathname === "/archive"
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <Archive className="w-3.5 h-3.5 text-gray-500" />
+                      <span>Archive</span>
+                    </Link>
+                    <Link
+                      href="/trash"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${
+                        pathname === "/trash"
+                          ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-semibold"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        <span>Trash</span>
+                      </div>
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded">
+                        15d auto-delete
+                      </span>
+                    </Link>
+                  </div>
+
                   {/* Mobile Navigation Links */}
                   <div className="sm:hidden border-b border-gray-100 dark:border-gray-800 pb-2 mb-2 space-y-1">
-                    {navLinks.map((item) => (
+                    {mobileBottomNavLinks.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -248,7 +292,7 @@ export default function AppLayout({
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="sm:hidden flex items-center justify-around h-16 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shrink-0 z-40 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors">
-        {navLinks.map((item) => {
+        {mobileBottomNavLinks.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (

@@ -133,7 +133,58 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
   };
 
   // Delete Task
-  const handleDeleteTask = async (taskId: string) => {
+  // Move Task to Trash (15-day retention)
+  const handleMoveTaskToTrash = async (taskId: string) => {
+    const newColumns = columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isTrashed: true,
+              trashedAt: new Date().toISOString(),
+              isArchived: false,
+              archivedAt: null,
+              columnId: col.id,
+              columnTitle: col.title,
+              boardId: board.id,
+              boardTitle: board.title,
+            }
+          : t
+      ),
+    }));
+    setColumns(newColumns);
+    setActiveTask(null);
+    await onUpdateBoard(newColumns);
+  };
+
+  // Archive Task
+  const handleArchiveTask = async (taskId: string) => {
+    const newColumns = columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isArchived: true,
+              archivedAt: new Date().toISOString(),
+              isTrashed: false,
+              trashedAt: null,
+              columnId: col.id,
+              columnTitle: col.title,
+              boardId: board.id,
+              boardTitle: board.title,
+            }
+          : t
+      ),
+    }));
+    setColumns(newColumns);
+    setActiveTask(null);
+    await onUpdateBoard(newColumns);
+  };
+
+  const handleDeleteTask = handleMoveTaskToTrash;
+  const oldHandleDeleteTask = async (taskId: string) => {
     const newColumns = columns.map((col) => ({
       ...col,
       tasks: col.tasks.filter((t) => t.id !== taskId),
@@ -220,12 +271,14 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
                       snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-900/20" : ""
                     }`}
                   >
-                    {column.tasks.map((task, index) => (
+                    {column.tasks.filter((t) => !t.isTrashed && !t.isArchived).map((task, index) => (
                       <TaskCard
                         key={task.id}
                         task={task}
                         index={index}
                         onSelect={(t) => setActiveTask(t)}
+                        onArchiveTask={handleArchiveTask}
+                        onMoveToTrash={handleMoveTaskToTrash}
                         availableColumns={columns
                           .filter((c) => c.id !== column.id)
                           .map((c) => ({ id: c.id, title: c.title }))}
@@ -358,6 +411,7 @@ export default function KanbanBoard({ board, onUpdateBoard }: KanbanBoardProps) 
           onClose={() => setActiveTask(null)}
           onSave={handleSaveTaskModal}
           onDelete={handleDeleteTask}
+          onArchive={handleArchiveTask}
         />
       )}
     </div>

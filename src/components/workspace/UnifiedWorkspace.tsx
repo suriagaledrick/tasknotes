@@ -5,8 +5,8 @@ import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useAuth } from "@/contexts/AuthContext";
 import { Note, NOTE_COLORS } from "@/types/note";
 import { Board, BoardColumn, Task, PRIORITY_CONFIG } from "@/types/board";
-import { getUserNotes, createNote, updateNote, deleteNote } from "@/lib/notesService";
-import { getUserBoards, createBoard, updateBoard, deleteBoard, reorderBoards } from "@/lib/boardsService";
+import { getUserNotes, createNote, updateNote, deleteNote, moveNoteToTrash, archiveNote } from "@/lib/notesService";
+import { getUserBoards, createBoard, updateBoard, deleteBoard, reorderBoards, moveBoardToTrash, archiveBoard } from "@/lib/boardsService";
 import BoardTabs from "@/components/kanban/BoardTabs";
 import {
   moveNoteToTask,
@@ -114,14 +114,16 @@ export default function UnifiedWorkspace() {
     }
   }, [user]);
 
-  const activeBoard = boards.find((b) => b.id === selectedBoardId) || boards[0];
+  const activeBoards = boards.filter((b) => !b.isArchived && !b.isTrashed);
+  const activeBoard = activeBoards.find((b) => b.id === selectedBoardId) || activeBoards[0] || boards[0];
+  const activeNotes = notes.filter((n) => !n.isArchived && !n.isTrashed);
 
   // Collect scheduled tasks for calendar pane
   const allScheduledTasks: { task: Task; boardTitle: string; columnTitle: string }[] = [];
-  boards.forEach((board) => {
+  activeBoards.forEach((board) => {
     board.columns?.forEach((col) => {
       col.tasks?.forEach((task) => {
-        if (task.dueDate) {
+        if (task.dueDate && !task.isArchived && !task.isTrashed) {
           allScheduledTasks.push({
             task,
             boardTitle: board.title,
@@ -505,7 +507,122 @@ export default function UnifiedWorkspace() {
   };
 
   // Delete Board
-  const handleDeleteBoard = async (boardId: string) => {
+  // Move Board to Trash (15-day retention)
+  const handleMoveBoardToTrash = async (boardId: string) => {
+    if (!user || activeBoards.length <= 1) return;
+    try {
+      const remaining = boards.filter((b) => b.id !== boardId);
+      setBoards(remaining);
+      const remainingActive = activeBoards.filter((b) => b.id !== boardId);
+      setSelectedBoardId(remainingActive[0]?.id || null);
+      await moveBoardToTrash(user.uid, boardId);
+    } catch (err) {
+      console.error("Error moving board to trash:", err);
+      await loadData();
+    }
+  };
+
+  // Archive Board
+  const handleArchiveBoard = async (boardId: string) => {
+    if (!user || activeBoards.length <= 1) return;
+    try {
+      const remaining = boards.filter((b) => b.id !== boardId);
+      setBoards(remaining);
+      const remainingActive = activeBoards.filter((b) => b.id !== boardId);
+      setSelectedBoardId(remainingActive[0]?.id || null);
+      await archiveBoard(user.uid, boardId);
+    } catch (err) {
+      console.error("Error archiving board:", err);
+      await loadData();
+    }
+  };
+
+  // Move Note to Trash (15-day retention)
+  const handleMoveNoteToTrash = async (noteId: string) => {
+    if (!user) return;
+    try {
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (editingNote?.id === noteId) setEditingNote(null);
+      await moveNoteToTrash(user.uid, noteId);
+    } catch (err) {
+      console.error("Error moving note to trash:", err);
+      await loadData();
+    }
+  };
+
+  // Archive Note
+  const handleArchiveNote = async (noteId: string) => {
+    if (!user) return;
+    try {
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (editingNote?.id === noteId) setEditingNote(null);
+      await archiveNote(user.uid, noteId);
+    } catch (err) {
+      console.error("Error archiving note:", err);
+      await loadData();
+    }
+  };
+
+  // Move Task to Trash (15-day retention)
+  const handleMoveTaskToTrash = async (taskId: string) => {
+    if (!user || !activeBoard) return;
+    const newColumns = activeBoard.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isTrashed: true,
+              trashedAt: new Date().toISOString(),
+              isArchived: false,
+              archivedAt: null,
+              columnId: col.id,
+              columnTitle: col.title,
+              boardId: activeBoard.id,
+              boardTitle: activeBoard.title,
+            }
+          : t
+      ),
+    }));
+    const updatedBoard = { ...activeBoard, columns: newColumns };
+    setBoards((prev) =>
+      prev.map((b) => (b.id === updatedBoard.id ? updatedBoard : b))
+    );
+    await updateBoard(user.uid, activeBoard.id, { columns: newColumns });
+    setEditingTask(null);
+  };
+
+  // Archive Task
+  const handleArchiveTask = async (taskId: string) => {
+    if (!user || !activeBoard) return;
+    const newColumns = activeBoard.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              isArchived: true,
+              archivedAt: new Date().toISOString(),
+              isTrashed: false,
+              trashedAt: null,
+              columnId: col.id,
+              columnTitle: col.title,
+              boardId: activeBoard.id,
+              boardTitle: activeBoard.title,
+            }
+          : t
+      ),
+    }));
+    const updatedBoard = { ...activeBoard, columns: newColumns };
+    setBoards((prev) =>
+      prev.map((b) => (b.id === updatedBoard.id ? updatedBoard : b))
+    );
+    await updateBoard(user.uid, activeBoard.id, { columns: newColumns });
+    setEditingTask(null);
+  };
+
+  const handleDeleteBoard = handleMoveBoardToTrash;
+  const oldHandleDeleteBoard = async (boardId: string) => {
     if (!user || boards.length <= 1) return;
     if (!confirm("Are you sure you want to delete this board?")) return;
     try {
@@ -735,7 +852,8 @@ export default function UnifiedWorkspace() {
           {/* Quick Board Switcher */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <BoardTabs
-              boards={boards}
+              boards={activeBoards}
+              onArchiveBoard={handleArchiveBoard}
               selectedBoardId={selectedBoardId}
               onSelectBoard={(id) => setSelectedBoardId(id)}
               onReorderBoards={handleReorderBoards}
@@ -761,7 +879,7 @@ export default function UnifiedWorkspace() {
                 </div>
 
                 <div className="space-y-2 flex-1 max-h-56 overflow-y-auto px-0.5">
-                  {column.tasks.map((task, idx) => (
+                  {column.tasks.filter((t) => !t.isArchived && !t.isTrashed).map((task, idx) => (
                     <TaskCard
                       key={`mob-task-${task.id}`}
                       task={task}
@@ -774,6 +892,8 @@ export default function UnifiedWorkspace() {
                       onMoveToColumn={handleMoveTaskToColumn}
                       onScheduleDate={handleScheduleTaskDate}
                       onConvertToNote={handleConvertTaskToNote}
+                      onArchiveTask={handleArchiveTask}
+                      onMoveToTrash={handleMoveTaskToTrash}
                     />
                   ))}
                   {column.tasks.length === 0 && (
@@ -915,7 +1035,9 @@ export default function UnifiedWorkspace() {
             {/* PANE 1: LEFT - Google Keep & Notes Scratchpad */}
             <div className="h-full flex shrink-0">
               <WorkspaceNotesPane
-                notes={notes}
+                notes={activeNotes}
+                onArchiveNote={handleArchiveNote}
+                onMoveNoteToTrash={handleMoveNoteToTrash}
                 isCollapsed={leftCollapsed}
                 onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
                 onSelectNote={(note) => setEditingNote(note)}
@@ -939,7 +1061,8 @@ export default function UnifiedWorkspace() {
                 <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar min-w-0 flex-1">
                   <Kanban className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 hidden sm:block" />
                   <BoardTabs
-                    boards={boards}
+                    boards={activeBoards}
+              onArchiveBoard={handleArchiveBoard}
                     selectedBoardId={selectedBoardId}
                     onSelectBoard={(id) => setSelectedBoardId(id)}
                     onReorderBoards={handleReorderBoards}
@@ -1009,7 +1132,7 @@ export default function UnifiedWorkspace() {
                             snapshot.isDraggingOver ? "bg-blue-50/60 dark:bg-blue-950/40 ring-2 ring-blue-300 dark:ring-blue-600" : ""
                           }`}
                         >
-                          {column.tasks.map((task, index) => (
+                          {column.tasks.filter((t) => !t.isArchived && !t.isTrashed).map((task, index) => (
                             <TaskCard
                               key={task.id}
                               task={task}
@@ -1021,6 +1144,8 @@ export default function UnifiedWorkspace() {
                               onMoveToColumn={handleMoveTaskToColumn}
                               onScheduleDate={handleScheduleTaskDate}
                               onConvertToNote={handleConvertTaskToNote}
+                      onArchiveTask={handleArchiveTask}
+                      onMoveToTrash={handleMoveTaskToTrash}
                             />
                           ))}
                           {provided.placeholder}
@@ -1176,20 +1301,9 @@ export default function UnifiedWorkspace() {
             await updateBoard(user.uid, activeBoard.id, { columns: newColumns });
             setEditingTask(null);
           }}
-          onDelete={async (taskId) => {
-            if (!user || !activeBoard) return;
-            const newColumns = activeBoard.columns.map((col) => ({
-              ...col,
-              tasks: col.tasks.filter((t) => t.id !== taskId),
-            }));
-            const updatedBoard = { ...activeBoard, columns: newColumns };
-            setBoards((prev) =>
-              prev.map((b) => (b.id === updatedBoard.id ? updatedBoard : b))
-            );
-            await updateBoard(user.uid, activeBoard.id, { columns: newColumns });
-            setEditingTask(null);
-          }}
-        />
+          onDelete={handleMoveTaskToTrash}
+          onArchive={handleArchiveTask}
+          />
       )}
 
       {/* Create Board Modal */}
