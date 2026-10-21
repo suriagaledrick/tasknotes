@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { Note, NOTE_COLORS } from "@/types/note";
 import {
@@ -47,14 +48,109 @@ export default function WorkspaceNotesPane({
   onArchiveNote,
   onMoveNoteToTrash,
 }: WorkspaceNotesPaneProps) {
+  const [mounted, setMounted] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const [quickContent, setQuickContent] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+  } | null>(null);
+
+  const menuDropdownRef = useRef<HTMLDivElement | null>(null);
+  const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+  const handleToggleMenu = (e: React.MouseEvent<HTMLButtonElement>, noteId: string) => {
+    e.stopPropagation();
+    if (menuNoteId === noteId) {
+      setMenuNoteId(null);
+      setMenuPos(null);
+    } else {
+      activeButtonRef.current = e.currentTarget;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const menuWidth = 192;
+      const estimatedHeight = 240;
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+
+      let left = rect.right - menuWidth;
+      if (left < 8) left = 8;
+      if (left + menuWidth > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - menuWidth - 8);
+      }
+
+      setMenuPos(
+        openUp
+          ? { bottom: window.innerHeight - rect.top + 6, left }
+          : { top: rect.bottom + 6, left }
+      );
+      setMenuNoteId(noteId);
+    }
+  };
+
+  // Close menu on outside click, Escape key, or external scroll/resize
+  useEffect(() => {
+    if (!menuNoteId) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node | null;
+      if (
+        menuDropdownRef.current &&
+        !menuDropdownRef.current.contains(target) &&
+        activeButtonRef.current &&
+        !activeButtonRef.current.contains(target)
+      ) {
+        setMenuNoteId(null);
+        setMenuPos(null);
+      }
+    };
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuNoteId(null);
+        setMenuPos(null);
+      }
+    };
+
+    const handleScroll = (e: Event) => {
+      if (menuDropdownRef.current && menuDropdownRef.current.contains(e.target as Node)) {
+        return;
+      }
+      setMenuNoteId(null);
+      setMenuPos(null);
+    };
+
+    const handleResize = () => {
+      setMenuNoteId(null);
+      setMenuPos(null);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeydown);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [menuNoteId]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +171,7 @@ export default function WorkspaceNotesPane({
       <div className="w-12 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 shrink-0 transition-all">
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+          className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
           title="Expand Notes Pane"
         >
           <ChevronRight className="w-4 h-4" />
@@ -87,6 +183,8 @@ export default function WorkspaceNotesPane({
       </div>
     );
   }
+
+  const activeMenuNote = menuNoteId ? notes.find((n) => n.id === menuNoteId) : null;
 
   return (
     <div className="w-full md:w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full shrink-0 transition-all select-none">
@@ -209,98 +307,17 @@ export default function WorkspaceNotesPane({
                         </div>
 
                         <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          {/* Mobile Quick Action Menu */}
+                          {/* Quick Action Menu Trigger Button */}
                           {(onMoveNoteToBoard || onScheduleNote || onArchiveNote || onMoveNoteToTrash) && (
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={() => setMenuNoteId(menuNoteId === note.id ? null : note.id)}
-                                className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition cursor-pointer"
-                                title="Quick actions"
-                                aria-label="Note quick actions"
-                              >
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                              </button>
-
-                              {menuNoteId === note.id && (
-                                <div
-                                  className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-1.5 z-50 text-xs"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {onMoveNoteToBoard && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        onMoveNoteToBoard(note);
-                                        setMenuNoteId(null);
-                                      }}
-                                      className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                      <Kanban className="w-3.5 h-3.5 text-blue-500" />
-                                      <span>Move to Board</span>
-                                    </button>
-                                  )}
-
-                                  {onScheduleNote && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          onScheduleNote(note, todayStr);
-                                          setMenuNoteId(null);
-                                        }}
-                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
-                                      >
-                                        <Clock className="w-3.5 h-3.5 text-amber-500" />
-                                        <span>Schedule Today</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          onScheduleNote(note, tomorrowStr);
-                                          setMenuNoteId(null);
-                                        }}
-                                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
-                                      >
-                                        <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                                        <span>Schedule Tomorrow</span>
-                                      </button>
-                                    </>
-                                  )}
-
-                                  {(onArchiveNote || onMoveNoteToTrash) && (
-                                    <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
-                                      {onArchiveNote && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            onArchiveNote(note.id);
-                                            setMenuNoteId(null);
-                                          }}
-                                          className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
-                                        >
-                                          <Archive className="w-3.5 h-3.5 text-gray-500" />
-                                          <span>Archive Note</span>
-                                        </button>
-                                      )}
-                                      {onMoveNoteToTrash && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            onMoveNoteToTrash(note.id);
-                                            setMenuNoteId(null);
-                                          }}
-                                          className="w-full text-left px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 cursor-pointer font-medium"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                                          <span>Move to Trash</span>
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleMenu(e, note.id)}
+                              className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition cursor-pointer"
+                              title="Quick actions"
+                              aria-label="Note quick actions"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
                           )}
 
                           <button
@@ -349,6 +366,108 @@ export default function WorkspaceNotesPane({
           </div>
         )}
       </Droppable>
+
+      {/* Viewport-Aware Top-Layer Portal Dropdown for Notes */}
+      {mounted && activeMenuNote && menuPos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={menuDropdownRef}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "fixed",
+            left: `${menuPos.left}px`,
+            ...(menuPos.top !== undefined ? { top: `${menuPos.top}px` } : {}),
+            ...(menuPos.bottom !== undefined ? { bottom: `${menuPos.bottom}px` } : {}),
+            maxHeight: "calc(100vh - 24px)",
+          }}
+          className="w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-1.5 z-[9999] text-xs overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
+        >
+          {onMoveNoteToBoard && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveNoteToBoard(activeMenuNote);
+                setMenuNoteId(null);
+                setMenuPos(null);
+              }}
+              className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Kanban className="w-3.5 h-3.5 text-blue-500" />
+              <span>Move to Board</span>
+            </button>
+          )}
+
+          {onScheduleNote && (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+              <span className="text-[10px] uppercase font-bold text-gray-400 px-2 py-0.5 block">
+                Schedule Note
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onScheduleNote(activeMenuNote, todayStr);
+                  setMenuNoteId(null);
+                  setMenuPos(null);
+                }}
+                className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <span>Schedule Today</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onScheduleNote(activeMenuNote, tomorrowStr);
+                  setMenuNoteId(null);
+                  setMenuPos(null);
+                }}
+                className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Schedule Tomorrow</span>
+              </button>
+            </div>
+          )}
+
+          {(onArchiveNote || onMoveNoteToTrash) && (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+              {onArchiveNote && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchiveNote(activeMenuNote.id);
+                    setMenuNoteId(null);
+                    setMenuPos(null);
+                  }}
+                  className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Archive className="w-3.5 h-3.5 text-gray-500" />
+                  <span>Archive Note</span>
+                </button>
+              )}
+              {onMoveNoteToTrash && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveNoteToTrash(activeMenuNote.id);
+                    setMenuNoteId(null);
+                    setMenuPos(null);
+                  }}
+                  className="w-full text-left px-2 py-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1.5 cursor-pointer font-medium"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  <span>Move to Trash</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

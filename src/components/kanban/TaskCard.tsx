@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Draggable } from "@hello-pangea/dnd";
 import { Task, PRIORITY_CONFIG, PRESET_LABELS } from "@/types/board";
 import {
@@ -42,7 +43,21 @@ export default function TaskCard({
   onArchiveTask,
   onMoveToTrash,
 }: TaskCardProps) {
+  const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+  } | null>(null);
+
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const priorityConfig = task.priority ? PRIORITY_CONFIG[task.priority] : null;
 
   // Check if due date is overdue
@@ -58,6 +73,95 @@ export default function TaskCard({
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+  const updateMenuPosition = useCallback(() => {
+    if (!menuButtonRef.current) return;
+    const rect = menuButtonRef.current.getBoundingClientRect();
+    const menuWidth = 192; // 12rem / w-48
+    const estimatedHeight = 280; // approximate menu height with all options
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    // If not enough room below and more room above, flip upward
+    const openUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+
+    let left = rect.right - menuWidth;
+    // Keep within viewport horizontal bounds
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - menuWidth - 8);
+    }
+
+    if (openUp) {
+      setMenuPos({
+        bottom: window.innerHeight - rect.top + 6,
+        left,
+      });
+    } else {
+      setMenuPos({
+        top: rect.bottom + 6,
+        left,
+      });
+    }
+  }, []);
+
+  const handleToggleMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (menuOpen) {
+      setMenuOpen(false);
+    } else {
+      updateMenuPosition();
+      setMenuOpen(true);
+    }
+  };
+
+  // Close menu on outside click, Escape key, or external scroll/resize
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node | null;
+      if (
+        menuDropdownRef.current &&
+        !menuDropdownRef.current.contains(target) &&
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleScroll = (e: Event) => {
+      if (menuDropdownRef.current && menuDropdownRef.current.contains(e.target as Node)) {
+        return; // Allow scrolling inside the menu itself if viewport is very short
+      }
+      setMenuOpen(false);
+    };
+
+    const handleResize = () => {
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeydown);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [menuOpen]);
 
   const renderCardBody = (providedProps?: any, isDragging?: boolean) => (
     <div
@@ -102,11 +206,7 @@ export default function TaskCard({
           <div />
         )}
 
-        {/* Drag Handle & Quick Menu Controls */}
-        <div
-          className="flex items-center gap-0.5 shrink-0"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           {/* Desktop Drag-Handle Grip Icon (⋮⋮) */}
           {isDraggable && (
             <span
@@ -122,8 +222,9 @@ export default function TaskCard({
           {(onMoveToColumn || onScheduleDate || onConvertToNote || onArchiveTask || onMoveToTrash) && (
             <div className="relative">
               <button
+                ref={menuButtonRef}
                 type="button"
-                onClick={() => setMenuOpen(!menuOpen)}
+                onClick={handleToggleMenu}
                 className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition cursor-pointer"
                 title="Quick actions"
                 aria-label="Card quick actions"
@@ -131,10 +232,19 @@ export default function TaskCard({
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
 
-              {menuOpen && (
+              {/* Viewport-Aware Top-Layer Portal Dropdown */}
+              {mounted && menuOpen && menuPos && typeof document !== "undefined" && createPortal(
                 <div
-                  className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-1.5 z-40 text-xs"
+                  ref={menuDropdownRef}
                   onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: "fixed",
+                    left: `${menuPos.left}px`,
+                    ...(menuPos.top !== undefined ? { top: `${menuPos.top}px` } : {}),
+                    ...(menuPos.bottom !== undefined ? { bottom: `${menuPos.bottom}px` } : {}),
+                    maxHeight: "calc(100vh - 24px)",
+                  }}
+                  className="w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-1.5 z-[9999] text-xs overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
                 >
                   {/* Schedule Options */}
                   {onScheduleDate && (
@@ -144,7 +254,8 @@ export default function TaskCard({
                       </span>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onScheduleDate(task.id, todayStr);
                           setMenuOpen(false);
                         }}
@@ -155,7 +266,8 @@ export default function TaskCard({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onScheduleDate(task.id, tomorrowStr);
                           setMenuOpen(false);
                         }}
@@ -177,7 +289,8 @@ export default function TaskCard({
                         <button
                           key={col.id}
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onMoveToColumn(task.id, col.id);
                             setMenuOpen(false);
                           }}
@@ -196,7 +309,8 @@ export default function TaskCard({
                       {onArchiveTask && (
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onArchiveTask(task.id);
                             setMenuOpen(false);
                           }}
@@ -209,7 +323,8 @@ export default function TaskCard({
                       {onMoveToTrash && (
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onMoveToTrash(task.id);
                             setMenuOpen(false);
                           }}
@@ -224,19 +339,23 @@ export default function TaskCard({
 
                   {/* Convert to Note */}
                   {onConvertToNote && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onConvertToNote(task);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <StickyNote className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Convert to Note</span>
-                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onConvertToNote(task);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <StickyNote className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Convert to Note</span>
+                      </button>
+                    </div>
                   )}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           )}
